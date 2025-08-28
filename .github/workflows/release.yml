@@ -1,0 +1,130 @@
+name: Release Build
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        variant:
+          - { name: "Non-KSU", KSU: "None", KSU_SUSFS: "false", KSU_MANUAL_HOOK: "false", LAST_BUILD: "false" }
+          - { name: "KSUN-Only", KSU: "Next", KSU_SUSFS: "false", KSU_MANUAL_HOOK: "true", LAST_BUILD: "false" }
+          - { name: "KSUN+SuSFS", KSU: "Next", KSU_SUSFS: "true", KSU_MANUAL_HOOK: "true", LAST_BUILD: "false" }
+          - { name: "SUKISU-Only", KSU: "Suki", KSU_SUSFS: "false", KSU_MANUAL_HOOK: "true", LAST_BUILD: "false" }
+          - { name: "SUKISU+SuSFS", KSU: "Suki", KSU_SUSFS: "true", KSU_MANUAL_HOOK: "true", LAST_BUILD: "true" }
+    name: Build ${{ matrix.variant.name }} variant
+    uses: ./.github/workflows/build.yml
+    secrets: inherit
+    with:
+      KSU: ${{ matrix.variant.KSU }}
+      KSU_SUSFS: ${{ matrix.variant.KSU_SUSFS }}
+      KSU_MANUAL_HOOK: ${{ matrix.variant.KSU_MANUAL_HOOK }}
+      LAST_BUILD: ${{ matrix.variant.LAST_BUILD }}
+      BUILD_BOOTIMG: "true"
+      TODO: "kernel"
+
+  release:
+    name: Create Unified Release
+    needs: build
+    runs-on: self-hosted
+    steps:
+      - name: Checkout current repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release_files
+
+      - name: Extract variables from info.txt (Safe)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          # Find the info.txt file
+          info_file=$(find release_files -name "info.txt" -type f | head -1)
+
+          if [[ -f "$info_file" ]]; then
+            echo "Found info.txt at: $info_file"
+
+            # Extract variables safely without using functions.sh
+            while IFS='=' read -r key value; do
+              # Skip empty lines and comments
+              [[ -z "$key" || "$key" =~ ^#.*$ ]] && continue
+
+              # Clean up whitespace
+              key=$(echo "$key" | xargs)
+              value=$(echo "$value" | xargs)
+
+              # Validate that we have both key and value
+              if [[ -n "$key" && -n "$value" ]]; then
+                echo "Setting: $key=$value"
+                echo "$key=$value" >> $GITHUB_ENV
+              fi
+            done < "$info_file"
+
+            echo "Variables extracted successfully"
+          else
+            echo "Warning: info.txt not found in artifacts"
+
+            # Set default values to prevent pipeline failure
+            echo "KERNEL_NAME=QuartiX" >> $GITHUB_ENV
+            echo "LINUX_VERSION=$(curl -s https://raw.githubusercontent.com/aosp-mirror/kernel_common/refs/heads/android12-5.10-lts/Makefile | grep -E '^(VERSION|PATCHLEVEL|SUBLEVEL) ?=' | cut -d '=' -f2 | tr -d ' ' | paste -sd.)" >> $GITHUB_ENV
+            echo "KSU_NEXT_VERSION=$(gh api repos/KernelSU-Next/KernelSU-Next/tags --jq '.[0].name')" >> $GITHUB_ENV
+            echo "SUKISU_VERSION=$(gh api repos/SukiSU-Ultra/SukiSU-Ultra/tags --jq '.[0].name')" >> $GITHUB_ENV
+            echo "SUSFS_VERSION=$(curl -s https://gitlab.com/simonpunk/susfs4ksu/raw/gki-android12-5.10/kernel_patches/include/linux/susfs.h | grep -E '^#define SUSFS_VERSION' | cut -d' ' -f3 | sed 's/\"//g')" >> $GITHUB_ENV
+            echo "RELEASE_REPO=fastbooteraseboot/quartix-releases" >> $GITHUB_ENV
+
+            echo "Using default values to continue release process"
+          fi
+
+      - name: Generate release tag
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+            # Get the latest tag, handle case where no tags exist
+            LATEST_TAG=$(gh api repos/$RELEASE_REPO/tags --jq '.[0].name' 2>/dev/null || echo "")
+
+            # Handle case when $LATEST_TAG doesn't contain $KERNEL_NAME or is empty
+            if [[ -z "$LATEST_TAG" ]] || ! echo "$LATEST_TAG" | grep -q "$KERNEL_NAME"; then
+                RELEASE_TAG="$KERNEL_NAME-r1"
+            else
+                RELEASE_TAG="$(echo "$LATEST_TAG" | awk -F'-r' '{suffix=$2; if (!suffix) suffix=0; suffix++; printf "%s-r%d", $1, suffix}')"
+            fi
+
+            echo "Release tag: $RELEASE_TAG"
+            echo "RELEASE_TAG=$RELEASE_TAG" >> $GITHUB_ENV
+
+      - name: Upload All Builds to release repo
+        uses: softprops/action-gh-release@v2
+        with:
+          repository: ${{ env.RELEASE_REPO }}
+          name: ${{ env.RELEASE_TAG }}
+          tag_name: ${{ env.RELEASE_TAG }}
+          prerelease: true
+          files: release_files/**/*
+          body: |
+            ## 📢 ${{ env.RELEASE_TAG }} Builds
+            -> Linux ${{ env.LINUX_VERSION }} (android12-5.10-lts)
+            -> KSUNext ${{ env.KSU_NEXT_VERSION }}
+            -> SukiKSU ${{ env.SUKISU_VERSION }}
+            -> SUSFS ඞ ${{ env.SUSFS_VERSION }}
+
+            #### ✍️ Notes
+            -> This kernel only for GKI android12-5.10 device
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+
+      - name: Send notification to TG (Safe)
+        run: |
+            MESSAGE="📦 Release completed! [Click](https://github.com/${{ env.RELEASE_REPO }}/releases/tag/${{ env.RELEASE_TAG }})"
+            source functions.sh
+            send_msg "$MESSAGE"
+        env:
+          TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
+          TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
