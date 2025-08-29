@@ -116,7 +116,7 @@ jobs:
       - name: Install Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y gh bc bison flex libssl-dev libelf-dev dwarves
+          sudo apt-get install -y gh bc bison flex libssl-dev libelf-dev dwarves cpio
 
 #     - name: Enable swap with high priority and swappiness
 #       run: |
