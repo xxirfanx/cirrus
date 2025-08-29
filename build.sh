@@ -200,7 +200,7 @@ MAKE_ARGS=(
   LD=ld.lld HOSTLD=ld.lld
 )
 KERNEL_IMAGE="$OUTDIR/arch/arm64/boot/Image"
-KERNEL_MODULES="$OUTDIR/out_modules"
+KERNEL_MODULES="$KSRC/out_modules"
 
 text=$(
   cat << EOF
@@ -230,7 +230,7 @@ log "Building kernel..."
 make ${MAKE_ARGS[@]} Image modules
 
 log "Installing the kernel modules..."
-make ${MAKE_ARGS[@]} modules_install
+make ${MAKE_ARGS[@]} INSTALL_MOD_PATH=./out_modules modules_install
 
 # Check KMI Function symbol
 # $KMI_CHECK "$KSRC/android/abi_gki_aarch64.xml" "$MODULE_SYMVERS"
