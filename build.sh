@@ -230,10 +230,10 @@ log "Building kernel..."
 make ${MAKE_ARGS[@]} Image modules
 
 log "Installing the kernel modules..."
-make ${MAKE_ARGS[@]} INSTALL_MOD_PATH=./out_modules modules_install
-
-log "Stripping the kernel modules..."
-find "$KERNEL_MODULES" -name '*.ko' -exec llvm-strip --strip-debug {} \;
+make ${MAKE_ARGS[@]} \
+  INSTALL_MOD_PATH=./out_modules \
+  INSTALL_MOD_STRIP=1 \
+  modules_install
 
 # Check KMI Function symbol
 # $KMI_CHECK "$KSRC/android/abi_gki_aarch64.xml" "$MODULE_SYMVERS"
@@ -295,12 +295,13 @@ KERNEL_IMAGE_ZIP_NAME=${AK3_ZIP_NAME//AK3/KIMG}
 zip -r9 $WORKDIR/$KERNEL_IMAGE_ZIP_NAME ./*
 cd $OLDPWD
 
-# Zip the kernel modules
+# Compress the kernel modules
+KERNEL_MODULES_ARCHIVE_NAME=${AK3_ZIP_NAME//AK3/KMOD}
+KERNEL_MODULES_ARCHIVE_NAME=${KERNEL_MODULES_ARCHIVE_NAME//.zip/.tar.gz}
 mkdir kernel-modules && cd kernel-modules
-log "Zipping kernel modules..."
+log "Compressing kernel modules..."
 cp -R $KERNEL_MODULES .
-KERNEL_MODULES_ZIP_NAME=${AK3_ZIP_NAME//AK3/KMOD}
-zip -r9 $WORKDIR/$KERNEL_MODULES_ZIP_NAME ./*
+tar -czf "$WORKDIR/$KERNEL_MODULES_ARCHIVE_NAME" ./*
 cd $OLDPWD
 
 if [[ $BUILD_BOOTIMG == "true" ]]; then
@@ -384,7 +385,7 @@ fi
 if [[ $STATUS == "BETA" ]]; then
   reply_file "$MESSAGE_ID" "$WORKDIR/$AK3_ZIP_NAME"
   reply_file "$MESSAGE_ID" "$WORKDIR/$KERNEL_IMAGE_ZIP_NAME"
-  reply_file "$MESSAGE_ID" "$WORKDIR/$KERNEL_MODULES_ZIP_NAME"
+  reply_file "$MESSAGE_ID" "$WORKDIR/$KERNEL_MODULES_ARCHIVE_NAME"
   reply_file "$MESSAGE_ID" "$WORKDIR/build.log"
 else
   reply_msg "$MESSAGE_ID" "✅ Build Succeeded"
