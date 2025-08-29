@@ -200,7 +200,7 @@ MAKE_ARGS=(
   LD=ld.lld HOSTLD=ld.lld
 )
 KERNEL_IMAGE="$OUTDIR/arch/arm64/boot/Image"
-KERNEL_MODULES="$KSRC/out_modules"
+KERNEL_MODULES="$OUTDIR/out_modules"
 
 text=$(
   cat << EOF
