@@ -180,11 +180,11 @@ fi
 if [[ $TODO == "kernel" ]]; then
   LATEST_COMMIT_HASH=$(git rev-parse --short HEAD)
   if [[ $STATUS == "BETA" ]]; then
-    SUFFIX=$LATEST_COMMIT_HASH
+    SUFFIX="$LATEST_COMMIT_HASH"
   else
-    SUFFIX="${RELEASE}@${LATEST_COMMIT_HASH}"
+    SUFFIX="${RELEASE}-${LATEST_COMMIT_HASH}"
   fi
-  config --set-str CONFIG_LOCALVERSION "-$KERNEL_NAME/$SUFFIX"
+  config --set-str CONFIG_LOCALVERSION "-$KERNEL_NAME-$SUFFIX"
 fi
 
 # Declare needed variables
@@ -231,6 +231,9 @@ make ${MAKE_ARGS[@]} Image modules
 
 log "Installing the kernel modules..."
 make ${MAKE_ARGS[@]} INSTALL_MOD_PATH=./out_modules modules_install
+
+log "Stripping the kernel modules..."
+find "$KERNEL_MODULES" -name '*.ko' -exec llvm-strip --strip-debug {} \;
 
 # Check KMI Function symbol
 # $KMI_CHECK "$KSRC/android/abi_gki_aarch64.xml" "$MODULE_SYMVERS"
