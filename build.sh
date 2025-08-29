@@ -88,7 +88,7 @@ log "Cloning GCC..."
 GCC_DIR="$WORKDIR/gcc"
 GCC_BIN="${GCC_DIR}/bin"
 git clone --depth=1 -q \
-  https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/host/x86_64-linux-glibc2.17-4.8 \
+  https://github.com/LineageOS/android_prebuilts_gcc_linux-x86_aarch64_aarch64-linux-android-4.9 \
   $GCC_DIR
 
 # Clone Rust
@@ -172,9 +172,9 @@ if ksu_manual_hook; then
 fi
 
 # Enable KPM Supports for SukiSU
-if [[ $KSU == "Suki" ]]; then
-  config --enable CONFIG_KPM
-fi
+# if [[ $KSU == "Suki" ]]; then
+#   config --enable CONFIG_KPM
+# fi
 
 # set localversion
 if [[ $TODO == "kernel" ]]; then
@@ -200,6 +200,7 @@ MAKE_ARGS=(
   LD=ld.lld HOSTLD=ld.lld
 )
 KERNEL_IMAGE="$OUTDIR/arch/arm64/boot/Image"
+KERNEL_MODULES="$OUTDIR/out_modules"
 
 text=$(
   cat << EOF
@@ -226,7 +227,10 @@ fi
 
 # Build the actual kernel
 log "Building kernel..."
-make ${MAKE_ARGS[@]} Image
+make ${MAKE_ARGS[@]} Image modules
+
+log "Installing the kernel modules..."
+make ${MAKE_ARGS[@]} modules_install
 
 # Check KMI Function symbol
 # $KMI_CHECK "$KSRC/android/abi_gki_aarch64.xml" "$MODULE_SYMVERS"
@@ -235,22 +239,22 @@ make ${MAKE_ARGS[@]} Image
 cd $WORKDIR
 
 # Patch the kernel Image for KPM Supports
-if [[ $KSU == "Suki" ]]; then
-  tempdir=$(mktemp -d) && cd $tempdir
-
-  # Setup patching tool
-  LATEST_SUKISU_PATCH=$(curl -s "https://api.github.com/repos/SukiSU-Ultra/SukiSU_KernelPatch_patch/releases/latest" | grep "browser_download_url" | grep "patch_linux" | cut -d '"' -f 4)
-  curl -Ls "$LATEST_SUKISU_PATCH" -o patch_linux
-  chmod a+x ./patch_linux
-
-  # Patch the kernel image
-  cp $KERNEL_IMAGE ./Image
-  sudo ./patch_linux
-  mv oImage Image
-  KERNEL_IMAGE=$(pwd)/Image
-
-  cd -
-fi
+#if [[ $KSU == "Suki" ]]; then
+#  tempdir=$(mktemp -d) && cd $tempdir
+#
+#  # Setup patching tool
+#  LATEST_SUKISU_PATCH=$(curl -s "https://api.github.com/repos/SukiSU-Ultra/SukiSU_KernelPatch_patch/releases/latest" | grep "browser_download_url" | grep "patch_linux" | cut -d '"' -f 4)
+#  curl -Ls "$LATEST_SUKISU_PATCH" -o patch_linux
+#  chmod a+x ./patch_linux
+#
+#  # Patch the kernel image
+#  cp $KERNEL_IMAGE ./Image
+#  sudo ./patch_linux
+#  mv oImage Image
+#  KERNEL_IMAGE=$(pwd)/Image
+#
+#  cd -
+#fi
 
 # Clone AnyKernel
 log "Cloning anykernel from $(simplify_gh_url "$ANYKERNEL_REPO")"
@@ -280,11 +284,20 @@ cp $KERNEL_IMAGE .
 zip -r9 $WORKDIR/$AK3_ZIP_NAME ./*
 cd $OLDPWD
 
+# Zip the kernel image
 mkdir kernel-image && cd kernel-image
 log "Zipping kernel image.."
 cp $KERNEL_IMAGE .
 KERNEL_IMAGE_ZIP_NAME=${AK3_ZIP_NAME//AK3/KIMG}
 zip -r9 $WORKDIR/$KERNEL_IMAGE_ZIP_NAME ./*
+cd $OLDPWD
+
+# Zip the kernel modules
+mkdir kernel-modules && cd kernel-modules
+log "Zipping kernel modules..."
+cp -R $KERNEL_MODULES .
+KERNEL_MODULES_ZIP_NAME=${AK3_ZIP_NAME//AK3/KMOD}
+zip -r9 $WORKDIR/$KERNEL_MODULES_ZIP_NAME ./*
 cd $OLDPWD
 
 if [[ $BUILD_BOOTIMG == "true" ]]; then
@@ -368,6 +381,7 @@ fi
 if [[ $STATUS == "BETA" ]]; then
   reply_file "$MESSAGE_ID" "$WORKDIR/$AK3_ZIP_NAME"
   reply_file "$MESSAGE_ID" "$WORKDIR/$KERNEL_IMAGE_ZIP_NAME"
+  reply_file "$MESSAGE_ID" "$WORKDIR/$KERNEL_MODULES_ZIP_NAME"
   reply_file "$MESSAGE_ID" "$WORKDIR/build.log"
 else
   reply_msg "$MESSAGE_ID" "✅ Build Succeeded"
