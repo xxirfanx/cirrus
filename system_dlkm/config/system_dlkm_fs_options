@@ -1,0 +1,3 @@
+Filesystem created:        Thu Jan  1 08:00:00 1970
+Filesystem UUID:           f575fc83-8d0a-52c0-b9b6-1c32a6a2261b
+mkfs.erofs options:        -zlz4hc -T 0 -U f575fc83-8d0a-52c0-b9b6-1c32a6a2261b --mount-point=/system_dlkm --fs-config-file=extracted/config/system_dlkm_fs_config --file-contexts=extracted/config/system_dlkm_file_contexts system_dlkm_repack.img extracted/system_dlkm

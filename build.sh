@@ -200,7 +200,7 @@ MAKE_ARGS=(
   LD=ld.lld HOSTLD=ld.lld
 )
 KERNEL_IMAGE="$OUTDIR/arch/arm64/boot/Image"
-KERNEL_MODULES="$OUTDIR/out_modules"
+KERNEL_MODULES_DIR="$(realpath "$OUTDIR/out_modules/lib/modules/*")"
 
 text=$(
   cat << EOF
@@ -234,6 +234,52 @@ make ${MAKE_ARGS[@]} \
   INSTALL_MOD_PATH=./out_modules \
   INSTALL_MOD_STRIP=1 \
   modules_install
+
+## Build system dlkm image
+KERNEL_MODULES_LIST=$(find "$KERNEL_MODULES_DIR" -type f -name '*.ko' | grep -viE 'kunit|test')
+MISSING=""
+shopt -s nullglob
+for idunno in $(echo $WORKDIR/system_dlkm/system_dlkm/lib/modules/modules.*); do
+  idunno=$(basename "$idunno")
+  if [ -f "$KERNEL_MODULES_DIR/$idunno" ]; then
+    cp $KERNEL_MODULES_DIR/$idunno $WORKDIR/system_dlkm/system_dlkm/lib/modules
+  else
+    MISSING+="$idunno "
+  fi
+done
+shopt -u nullglob
+
+if [[ "$MISSING" ]]; then
+  for oke in $MISSING; do
+    case "$oke" in
+      modules.load)
+        generate_modules_load "$KERNEL_MODULES_DIR/modules.dep" "$WORKDIR/system_dlkm/system_dlkm/lib/modules/modules.load"
+        ;;
+      *) error "File $oke is not found." ;;
+    esac
+  done
+fi
+
+# Copy the kernel modules
+cp $KERNEL_MODULES_LIST $WORKDIR/system_dlkm/system_dlkm/lib/modules
+
+# Generate fs configs
+for f in $WORKDIR/system_dlkm/system_dlkm/lib/modules/*; do
+  echo "system_dlkm/lib/modules/$(basename $f) 0 0 0644" \
+    >> $WORKDIR/system_dlkm/config/system_dlkm_fs_config
+done
+
+# Generate file contexts
+for f in $WORKDIR/system_dlkm/system_dlkm/lib/modules/*; do
+  echo "/system_dlkm/lib/modules/$(basename "$f" | sed 's|\.ko$|\\.ko|') u:object_r:system_dlkm_file:s0" \
+    >> $WORKDIR/system_dlkm/config/system_dlkm_file_contexts
+done
+
+# We need to rewrite the modules.dep
+rewrite_modules_dep "$WORKDIR/system_dlkm/system_dlkm/lib/modules/modules.dep"
+
+# Build the actual image
+mkfs_erofs "$WORKDIR/system_dlkm/system_dlkm" "$WORKDIR/system_dlkm.img"
 
 # Check KMI Function symbol
 # $KMI_CHECK "$KSRC/android/abi_gki_aarch64.xml" "$MODULE_SYMVERS"
@@ -296,13 +342,13 @@ zip -r9 $WORKDIR/$KERNEL_IMAGE_ZIP_NAME ./*
 cd $OLDPWD
 
 # Compress the kernel modules
-KERNEL_MODULES_ARCHIVE_NAME=${AK3_ZIP_NAME//AK3/KMOD}
-KERNEL_MODULES_ARCHIVE_NAME=${KERNEL_MODULES_ARCHIVE_NAME//.zip/.tar.gz}
-mkdir kernel-modules && cd kernel-modules
-log "Compressing kernel modules..."
-cp -R $KERNEL_MODULES .
-tar -czf "$WORKDIR/$KERNEL_MODULES_ARCHIVE_NAME" ./*
-cd $OLDPWD
+# KERNEL_MODULES_ARCHIVE_NAME=${AK3_ZIP_NAME//AK3/KMOD}
+# KERNEL_MODULES_ARCHIVE_NAME=${KERNEL_MODULES_ARCHIVE_NAME//.zip/.tar.gz}
+# mkdir kernel-modules && cd kernel-modules
+# log "Compressing kernel modules..."
+# cp -R $KERNEL_MODULES .
+# tar -czf "$WORKDIR/$KERNEL_MODULES_ARCHIVE_NAME" ./*
+# cd $OLDPWD
 
 if [[ $BUILD_BOOTIMG == "true" ]]; then
   AOSP_MIRROR=https://android.googlesource.com
@@ -385,7 +431,7 @@ fi
 if [[ $STATUS == "BETA" ]]; then
   reply_file "$MESSAGE_ID" "$WORKDIR/$AK3_ZIP_NAME"
   reply_file "$MESSAGE_ID" "$WORKDIR/$KERNEL_IMAGE_ZIP_NAME"
-  reply_file "$MESSAGE_ID" "$WORKDIR/$KERNEL_MODULES_ARCHIVE_NAME"
+  # reply_file "$MESSAGE_ID" "$WORKDIR/$KERNEL_MODULES_ARCHIVE_NAME"
   reply_file "$MESSAGE_ID" "$WORKDIR/build.log"
 else
   reply_msg "$MESSAGE_ID" "✅ Build Succeeded"

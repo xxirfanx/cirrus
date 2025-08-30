@@ -128,3 +128,40 @@ error() {
   fi
   exit 1
 }
+
+# Function to build an erofs image
+mkfs_erofs() {
+  local work_dir=$1
+  local out_file=$2
+
+  local config_dir
+  local fs_conf
+  local file_contexts
+  local partition_name
+
+  partition_name=$(basename "$work_dir")
+  config_dir=$work_dir/../config
+  fs_conf=${config_dir}/${partition_name}_fs_config
+  file_contexts=${config_dir}/${partition_name}_file_contexts
+
+  mkfs.erofs \
+    -mount-point "/${partition_name}" \
+    --fs-config-file "${fs_conf}" \
+    --file-contexts "${file_contexts}" \
+    -z lz4hc \
+    "$out_file" "$work_dir"
+}
+
+# Function to generate modules.load based on modules.dep.
+generate_modules_load() {
+  python3 \
+    $WORKDIR/scripts/generate_modules_load.py \
+    $@
+}
+
+# Function to rewrite modules.dep.
+rewrite_modules_dep() {
+  python3 \
+    $WORKDIR/scripts/rewrite_modules_dep.py
+  $@
+}
