@@ -145,7 +145,7 @@ mkfs_erofs() {
   file_contexts=${config_dir}/${partition_name}_file_contexts
 
   mkfs.erofs \
-    -mount-point "/${partition_name}" \
+    --mount-point "/${partition_name}" \
     --fs-config-file "${fs_conf}" \
     --file-contexts "${file_contexts}" \
     -z lz4hc \
