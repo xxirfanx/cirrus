@@ -341,6 +341,14 @@ KERNEL_IMAGE_ZIP_NAME=${AK3_ZIP_NAME//AK3/KIMG}
 zip -r9 $WORKDIR/$KERNEL_IMAGE_ZIP_NAME ./*
 cd $OLDPWD
 
+# Zip the system dlkm image
+SYSTEM_DLKM_IMAGE_ZIP_NAME=${AK3_ZIP_NAME//AK3/SYSDLKM}
+mkdir system-dlkm-image && cd system-dlkm-image
+log "Zipping system dlkm image..."
+cp "$WORKDIR/system_dlkm.img" .
+zip -r9 "$WORKDIR/$SYSTEM_DLKM_IMAGE_ZIP_NAME" ./*
+cd "$OLDPWD"
+
 # Compress the kernel modules
 # KERNEL_MODULES_ARCHIVE_NAME=${AK3_ZIP_NAME//AK3/KMOD}
 # KERNEL_MODULES_ARCHIVE_NAME=${KERNEL_MODULES_ARCHIVE_NAME//.zip/.tar.gz}
@@ -432,6 +440,7 @@ if [[ $STATUS == "BETA" ]]; then
   reply_file "$MESSAGE_ID" "$WORKDIR/$AK3_ZIP_NAME"
   reply_file "$MESSAGE_ID" "$WORKDIR/$KERNEL_IMAGE_ZIP_NAME"
   # reply_file "$MESSAGE_ID" "$WORKDIR/$KERNEL_MODULES_ARCHIVE_NAME"
+  reply_file "$MESSAGE_ID" "$WORKDIR/$SYSTEM_DLKM_IMAGE_ZIP_NAME"
   reply_file "$MESSAGE_ID" "$WORKDIR/build.log"
 else
   reply_msg "$MESSAGE_ID" "✅ Build Succeeded"
