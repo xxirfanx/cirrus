@@ -162,6 +162,6 @@ generate_modules_load() {
 # Function to rewrite modules.dep.
 rewrite_modules_dep() {
   python3 \
-    $WORKDIR/scripts/rewrite_modules_dep.py
-  $@
+    $WORKDIR/scripts/rewrite_modules_dep.py \
+    $@
 }
