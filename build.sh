@@ -220,7 +220,7 @@ make ${MAKE_ARGS[@]} $KERNEL_DEFCONFIG
 # Upload defconfig if we are doing defconfig
 if [[ $TODO == "defconfig" ]]; then
   log "Uploading defconfig..."
-  reply_msg "$MESSAGE_ID" "$(curl -s bashupload.com -T $OUTDIR/.config 2>&1)"
+  upload_file $OUTDIR/.config
   exit 0
 fi
 
