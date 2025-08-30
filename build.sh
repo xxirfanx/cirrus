@@ -200,7 +200,6 @@ MAKE_ARGS=(
   LD=ld.lld HOSTLD=ld.lld
 )
 KERNEL_IMAGE="$OUTDIR/arch/arm64/boot/Image"
-KERNEL_MODULES_DIR="$(realpath "$OUTDIR/out_modules/lib/modules/*")"
 
 text=$(
   cat << EOF
@@ -236,6 +235,7 @@ make ${MAKE_ARGS[@]} \
   modules_install
 
 ## Build system dlkm image
+KERNEL_MODULES_DIR="$(realpath $OUTDIR/out_modules/lib/modules/*)"
 KERNEL_MODULES_LIST=$(find "$KERNEL_MODULES_DIR" -type f -name '*.ko' | grep -viE 'kunit|test')
 MISSING=""
 shopt -s nullglob
