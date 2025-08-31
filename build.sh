@@ -333,6 +333,7 @@ sed -i "s|KMI_VERSION=.*|KMI_VERSION=android15-6.6|g" $WORKDIR/anykernel/anykern
 cd anykernel
 log "Zipping anykernel..."
 cp $KERNEL_IMAGE .
+cp "$WORKDIR/system_dlkm.img" .
 zip -r9 $WORKDIR/$AK3_ZIP_NAME ./*
 cd $OLDPWD
 
