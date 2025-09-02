@@ -327,13 +327,17 @@ else
     "s/kernel.string=.*/kernel.string=${KERNEL_NAME} ${RELEASE} ${LINUX_VERSION} ${VARIANT}/g" \
     $WORKDIR/anykernel/anykernel.sh
 fi
-sed -i "s|KMI_VERSION=.*|KMI_VERSION=android15-6.6|g" $WORKDIR/anykernel/anykernel.sh
+
+# Compress the system_dlkm directory with tar (for AnyKernel)
+cd $WORKDIR/system_dlkm
+tar -cJf "$WORKDIR/system_dlkm.tar.xz" *
+cd $OLDPWD
 
 # Zip the anykernel
 cd anykernel
 log "Zipping anykernel..."
 cp $KERNEL_IMAGE .
-cp "$WORKDIR/system_dlkm.img" .
+cp $WORKDIR/system_dlkm.tar.xz .
 zip -r9 $WORKDIR/$AK3_ZIP_NAME ./*
 cd $OLDPWD
 
