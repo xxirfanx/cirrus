@@ -330,6 +330,9 @@ fi
 
 # Compress the system_dlkm directory with tar (for AnyKernel)
 cd $WORKDIR/system_dlkm
+mv ./config $WORKDIR/anykernel
+mv ./system_dlkm/* .
+rm -rf ./system_dlkm
 tar -cJf "$WORKDIR/system_dlkm.tar.xz" *
 cd $OLDPWD
 
@@ -337,7 +340,7 @@ cd $OLDPWD
 cd anykernel
 log "Zipping anykernel..."
 cp $KERNEL_IMAGE .
-cp $WORKDIR/system_dlkm.tar.xz .
+cp $WORKDIR/system_dlkm.tar.xz ./modules/sdlkm.tar.xz
 zip -r9 $WORKDIR/$AK3_ZIP_NAME ./*
 cd $OLDPWD
 

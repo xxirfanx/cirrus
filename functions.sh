@@ -149,6 +149,9 @@ mkfs_erofs() {
     --fs-config-file "${fs_conf}" \
     --file-contexts "${file_contexts}" \
     -z lz4hc \
+    -b 4096 \
+    -C 262144 \
+    -T 1230768000 \
     "$out_file" "$work_dir"
 }
 
