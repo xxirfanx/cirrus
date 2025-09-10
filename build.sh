@@ -159,13 +159,7 @@ fi
 # KSU Manual Hooks
 if ksu_manual_hook; then
   log "Applying manual hook patch"
-  if [[ "$KSU" == "Next" ]]; then
-    log "Using manual-hook v1.5"
-    patch -p1 --forward < $WORKDIR/kernel-patches/manual-hook-v1.5.patch
-  else
-    log "Using manual-hook v1.4"
-    patch -p1 --forward < $WORKDIR/kernel-patches/manual-hook-v1.4.patch
-  fi
+  patch -p1 --forward < $WORKDIR/kernel-patches/manual-hook-v1.4.patch
   config --enable CONFIG_KSU_MANUAL_HOOK
   config --disable CONFIG_KSU_KPROBES_HOOK
   config --disable CONFIG_KSU_SUSFS_SUS_SU # Conflicts with manual hook
