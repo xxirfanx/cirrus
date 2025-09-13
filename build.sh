@@ -348,7 +348,7 @@ zip -r9 $WORKDIR/$KERNEL_IMAGE_ZIP_NAME ./*
 cd $OLDPWD
 
 # Zip the system dlkm image
-if [[ $LAST_BUILD == "true" || $STATUS == "BETA" ]]; then
+if [[ $STATUS == "BETA" ]]; then
   SYSTEM_DLKM_IMAGE_ZIP_NAME=${AK3_ZIP_NAME//AK3/SYSDLKM}
   mkdir system-dlkm-image && cd system-dlkm-image
   log "Zipping system dlkm image..."
