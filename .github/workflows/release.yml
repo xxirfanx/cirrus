@@ -21,7 +21,7 @@ jobs:
       KSU_SUSFS: ${{ matrix.variant.KSU_SUSFS }}
       KSU_MANUAL_HOOK: ${{ matrix.variant.KSU_MANUAL_HOOK }}
       LAST_BUILD: ${{ matrix.variant.LAST_BUILD }}
-      BUILD_BOOTIMG: "true"
+      BUILD_BOOTIMG: "false"
       TODO: "kernel"
 
   release:
