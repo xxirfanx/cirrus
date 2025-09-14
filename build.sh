@@ -220,63 +220,64 @@ fi
 
 # Build the actual kernel
 log "Building kernel..."
-make ${MAKE_ARGS[@]} Image modules
+# make ${MAKE_ARGS[@]} Image modules
+make ${MAKE_ARGS[@]} Image
 
-log "Installing the kernel modules..."
-make ${MAKE_ARGS[@]} \
-  INSTALL_MOD_PATH=./out_modules \
-  INSTALL_MOD_STRIP=1 \
-  modules_install
+# log "Installing the kernel modules..."
+# make ${MAKE_ARGS[@]} \
+#  INSTALL_MOD_PATH=./out_modules \
+#  INSTALL_MOD_STRIP=1 \
+#  modules_install
 
 ## Build system dlkm image
-if [[ $LAST_BUILD == "true" || $STATUS == "BETA" ]]; then
-  log "Building system dlkm image..."
-  KERNEL_MODULES_DIR="$(realpath $OUTDIR/out_modules/lib/modules/*)"
-  KERNEL_MODULES_LIST=$(find "$KERNEL_MODULES_DIR" -type f -name '*.ko' | grep -viE 'kunit|test')
-  MISSING=""
-  shopt -s nullglob
-  for idunno in $(echo $WORKDIR/system_dlkm/system_dlkm/lib/modules/modules.*); do
-    idunno=$(basename "$idunno")
-    if [ -f "$KERNEL_MODULES_DIR/$idunno" ]; then
-      cp $KERNEL_MODULES_DIR/$idunno $WORKDIR/system_dlkm/system_dlkm/lib/modules
-    else
-      MISSING+="$idunno "
-    fi
-  done
-  shopt -u nullglob
+#if [[ $LAST_BUILD == "true" || $STATUS == "BETA" ]]; then
+#  log "Building system dlkm image..."
+#  KERNEL_MODULES_DIR="$(realpath $OUTDIR/out_modules/lib/modules/*)"
+#  KERNEL_MODULES_LIST=$(find "$KERNEL_MODULES_DIR" -type f -name '*.ko' | grep -viE 'kunit|test')
+#  MISSING=""
+#  shopt -s nullglob
+#  for idunno in $(echo $WORKDIR/system_dlkm/system_dlkm/lib/modules/modules.*); do
+#    idunno=$(basename "$idunno")
+#    if [ -f "$KERNEL_MODULES_DIR/$idunno" ]; then
+#      cp $KERNEL_MODULES_DIR/$idunno $WORKDIR/system_dlkm/system_dlkm/lib/modules
+#    else
+#      MISSING+="$idunno "
+#    fi
+#  done
+#  shopt -u nullglob
 
-  if [[ "$MISSING" ]]; then
-    for oke in $MISSING; do
-      case "$oke" in
-        modules.load)
-          generate_modules_load "$KERNEL_MODULES_DIR/modules.dep" "$WORKDIR/system_dlkm/system_dlkm/lib/modules/modules.load"
-          ;;
-        *) error "File $oke is not found." ;;
-      esac
-    done
-  fi
+#  if [[ "$MISSING" ]]; then
+#    for oke in $MISSING; do
+#      case "$oke" in
+#        modules.load)
+#          generate_modules_load "$KERNEL_MODULES_DIR/modules.dep" "$WORKDIR/system_dlkm/system_dlkm/lib/modules/modules.load"
+#          ;;
+#        *) error "File $oke is not found." ;;
+#      esac
+#    done
+#  fi
 
-  # Copy the kernel modules
-  cp $KERNEL_MODULES_LIST $WORKDIR/system_dlkm/system_dlkm/lib/modules
+#  # Copy the kernel modules
+#  cp $KERNEL_MODULES_LIST $WORKDIR/system_dlkm/system_dlkm/lib/modules
 
-  # Generate fs configs
-  for f in $WORKDIR/system_dlkm/system_dlkm/lib/modules/*; do
-    echo "system_dlkm/lib/modules/$(basename $f) 0 0 0644" \
-      >> $WORKDIR/system_dlkm/config/system_dlkm_fs_config
-  done
+#  # Generate fs configs
+#  for f in $WORKDIR/system_dlkm/system_dlkm/lib/modules/*; do
+#    echo "system_dlkm/lib/modules/$(basename $f) 0 0 0644" \
+#      >> $WORKDIR/system_dlkm/config/system_dlkm_fs_config
+#  done
 
-  # Generate file contexts
-  for f in $WORKDIR/system_dlkm/system_dlkm/lib/modules/*; do
-    echo "/system_dlkm/lib/modules/$(basename "$f" | sed 's|\.ko$|\\.ko|') u:object_r:system_dlkm_file:s0" \
-      >> $WORKDIR/system_dlkm/config/system_dlkm_file_contexts
-  done
+#  # Generate file contexts
+#  for f in $WORKDIR/system_dlkm/system_dlkm/lib/modules/*; do
+#    echo "/system_dlkm/lib/modules/$(basename "$f" | sed 's|\.ko$|\\.ko|') u:object_r:system_dlkm_file:s0" \
+#      >> $WORKDIR/system_dlkm/config/system_dlkm_file_contexts
+#  done
 
-  # We need to rewrite the modules.dep
-  rewrite_modules_dep "$WORKDIR/system_dlkm/system_dlkm/lib/modules/modules.dep"
+#  # We need to rewrite the modules.dep
+#  rewrite_modules_dep "$WORKDIR/system_dlkm/system_dlkm/lib/modules/modules.dep"
 
-  # Build the actual image
-  mkfs_erofs "$WORKDIR/system_dlkm/system_dlkm" "$WORKDIR/system_dlkm.img"
-fi
+#  # Build the actual image
+#  mkfs_erofs "$WORKDIR/system_dlkm/system_dlkm" "$WORKDIR/system_dlkm.img"
+# fi
 
 # Check KMI Function symbol
 # $KMI_CHECK "$KSRC/android/abi_gki_aarch64.xml" "$MODULE_SYMVERS"
@@ -323,19 +324,19 @@ else
 fi
 
 # Compress the system_dlkm directory with tar (for AnyKernel)
-cd $WORKDIR/system_dlkm
-rm -rf $WORKDIR/anykernel/config
-mv ./config $WORKDIR/anykernel
-mv ./system_dlkm/* .
-rm -rf ./system_dlkm
-tar -cJf "$WORKDIR/system_dlkm.tar.xz" *
-cd $OLDPWD
+#cd $WORKDIR/system_dlkm
+#rm -rf $WORKDIR/anykernel/config
+#mv ./config $WORKDIR/anykernel
+#mv ./system_dlkm/* .
+#rm -rf ./system_dlkm
+#tar -cJf "$WORKDIR/system_dlkm.tar.xz" *
+#cd $OLDPWD
 
 # Zip the anykernel
 cd anykernel
 log "Zipping anykernel..."
 cp $KERNEL_IMAGE .
-cp $WORKDIR/system_dlkm.tar.xz ./modules/sdlkm.tar.xz
+#cp $WORKDIR/system_dlkm.tar.xz ./modules/sdlkm.tar.xz
 zip -r9 $WORKDIR/$AK3_ZIP_NAME ./*
 cd $OLDPWD
 
@@ -348,14 +349,14 @@ zip -r9 $WORKDIR/$KERNEL_IMAGE_ZIP_NAME ./*
 cd $OLDPWD
 
 # Zip the system dlkm image
-if [[ $STATUS == "BETA" ]]; then
-  SYSTEM_DLKM_IMAGE_ZIP_NAME=${AK3_ZIP_NAME//AK3/SYSDLKM}
-  mkdir system-dlkm-image && cd system-dlkm-image
-  log "Zipping system dlkm image..."
-  cp "$WORKDIR/system_dlkm.img" .
-  zip -r9 "$WORKDIR/$SYSTEM_DLKM_IMAGE_ZIP_NAME" ./*
-  cd "$OLDPWD"
-fi
+#if [[ $STATUS == "BETA" ]]; then
+#  SYSTEM_DLKM_IMAGE_ZIP_NAME=${AK3_ZIP_NAME//AK3/SYSDLKM}
+#  mkdir system-dlkm-image && cd system-dlkm-image
+#  log "Zipping system dlkm image..."
+#  cp "$WORKDIR/system_dlkm.img" .
+#  zip -r9 "$WORKDIR/$SYSTEM_DLKM_IMAGE_ZIP_NAME" ./*
+#  cd "$OLDPWD"
+#fi
 
 # Compress the kernel modules
 # KERNEL_MODULES_ARCHIVE_NAME=${AK3_ZIP_NAME//AK3/KMOD}
@@ -448,7 +449,7 @@ if [[ $STATUS == "BETA" ]]; then
   reply_file "$MESSAGE_ID" "$WORKDIR/$AK3_ZIP_NAME"
   reply_file "$MESSAGE_ID" "$WORKDIR/$KERNEL_IMAGE_ZIP_NAME"
   # reply_file "$MESSAGE_ID" "$WORKDIR/$KERNEL_MODULES_ARCHIVE_NAME"
-  reply_file "$MESSAGE_ID" "$WORKDIR/$SYSTEM_DLKM_IMAGE_ZIP_NAME"
+  # reply_file "$MESSAGE_ID" "$WORKDIR/$SYSTEM_DLKM_IMAGE_ZIP_NAME"
   reply_file "$MESSAGE_ID" "$WORKDIR/build.log"
 else
   reply_msg "$MESSAGE_ID" "✅ Build Succeeded"
