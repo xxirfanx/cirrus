@@ -9,9 +9,7 @@ jobs:
       matrix:
         variant:
           - { name: "Non-KSU", KSU: "None", KSU_SUSFS: "false", KSU_MANUAL_HOOK: "false", LAST_BUILD: "false" }
-          - { name: "KSUN-Only", KSU: "Next", KSU_SUSFS: "false", KSU_MANUAL_HOOK: "true", LAST_BUILD: "false" }
           - { name: "KSUN+SuSFS", KSU: "Next", KSU_SUSFS: "true", KSU_MANUAL_HOOK: "true", LAST_BUILD: "false" }
-          - { name: "SUKISU-Only", KSU: "Suki", KSU_SUSFS: "false", KSU_MANUAL_HOOK: "true", LAST_BUILD: "false" }
           - { name: "SUKISU+SuSFS", KSU: "Suki", KSU_SUSFS: "true", KSU_MANUAL_HOOK: "true", LAST_BUILD: "true" }
     name: Build ${{ matrix.variant.name }} variant
     uses: ./.github/workflows/build.yml
@@ -67,18 +65,6 @@ jobs:
             done < "$info_file"
 
             echo "Variables extracted successfully"
-          else
-            echo "Warning: info.txt not found in artifacts"
-
-            # Set default values to prevent pipeline failure
-            echo "KERNEL_NAME=QuartiX" >> $GITHUB_ENV
-            echo "LINUX_VERSION=$(curl -s https://raw.githubusercontent.com/aosp-mirror/kernel_common/refs/heads/android12-5.10-lts/Makefile | grep -E '^(VERSION|PATCHLEVEL|SUBLEVEL) ?=' | cut -d '=' -f2 | tr -d ' ' | paste -sd.)" >> $GITHUB_ENV
-            echo "KSU_NEXT_VERSION=$(gh api repos/KernelSU-Next/KernelSU-Next/tags --jq '.[0].name')" >> $GITHUB_ENV
-            echo "SUKISU_VERSION=$(gh api repos/SukiSU-Ultra/SukiSU-Ultra/tags --jq '.[0].name')" >> $GITHUB_ENV
-            echo "SUSFS_VERSION=$(curl -s https://gitlab.com/simonpunk/susfs4ksu/raw/gki-android12-5.10/kernel_patches/include/linux/susfs.h | grep -E '^#define SUSFS_VERSION' | cut -d' ' -f3 | sed 's/\"//g')" >> $GITHUB_ENV
-            echo "RELEASE_REPO=fastbooteraseboot/quartix-releases" >> $GITHUB_ENV
-
-            echo "Using default values to continue release process"
           fi
 
       - name: Generate release tag
@@ -108,14 +94,9 @@ jobs:
           prerelease: true
           files: release_files/**/*
           body: |
-            ## 📢 ${{ env.RELEASE_TAG }} Builds
-            -> Linux ${{ env.LINUX_VERSION }} (android12-5.10-lts)
-            -> KSUNext ${{ env.KSU_NEXT_VERSION }}
-            -> SukiKSU ${{ env.SUKISU_VERSION }}
+            ### 📢 ${{ env.RELEASE_TAG }} Builds
+            -> Linux ${{ env.LINUX_VERSION }} (android15-6.6-2024-08)
             -> SUSFS ඞ ${{ env.SUSFS_VERSION }}
-
-            #### ✍️ Notes
-            -> This kernel only for GKI android12-5.10 device
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
           GH_TOKEN: ${{ secrets.GH_TOKEN }}

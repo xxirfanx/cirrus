@@ -58,24 +58,16 @@ reply_msg() {
 install_ksu() {
   local REPO="$1"
   local REF="$2"
-  local LATEST_TAG
   local URL
 
-  if [[ -z "$REPO" ]]; then
-    echo "Usage: install_ksu <user/repo> [ref]"
+  if [[ -z "$REPO" ]] || [[ -z "$REF" ]]; then
+    echo "Usage: install_ksu <user/repo> <ref>"
     exit 1
-  fi
-
-  # Set ref to latest tag if ref is zero
-  LATEST_TAG=$(gh api "repos/$REPO/tags" --jq '.[0].name')
-  if [[ -z "$REF" ]]; then
-    REF="$LATEST_TAG"
   fi
 
   URL="https://raw.githubusercontent.com/$REPO/$REF/kernel/setup.sh"
   log "Installing KernelSU from $REPO | $REF"
   curl -LSs "$URL" | bash -s "$REF"
-  export KSU_VERSION="$LATEST_TAG"
 }
 
 # ksu_included() function
