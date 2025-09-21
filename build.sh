@@ -330,7 +330,6 @@ fi
 
 # Compress the system_dlkm directory with tar (for AnyKernel)
 cd $WORKDIR/system_dlkm
-rm -rf $WORKDIR/anykernel/config
 mv ./config $WORKDIR/anykernel
 mv ./system_dlkm/* .
 rm -rf ./system_dlkm
