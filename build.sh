@@ -235,54 +235,52 @@ make ${MAKE_ARGS[@]} \
   modules_install
 
 ## Build system dlkm image
-if [[ $LAST_BUILD == "true" || $STATUS == "BETA" ]]; then
-  log "Building system dlkm image..."
-  KERNEL_MODULES_DIR="$(realpath $OUTDIR/out_modules/lib/modules/*)"
-  KERNEL_MODULES_LIST=$(find "$KERNEL_MODULES_DIR" -type f -name '*.ko' | grep -viE 'kunit|test')
-  MISSING=""
-  shopt -s nullglob
-  for idunno in $(echo $WORKDIR/system_dlkm/system_dlkm/lib/modules/modules.*); do
-    idunno=$(basename "$idunno")
-    if [ -f "$KERNEL_MODULES_DIR/$idunno" ]; then
-      cp $KERNEL_MODULES_DIR/$idunno $WORKDIR/system_dlkm/system_dlkm/lib/modules
-    else
-      MISSING+="$idunno "
-    fi
-  done
-  shopt -u nullglob
-
-  if [[ "$MISSING" ]]; then
-    for oke in $MISSING; do
-      case "$oke" in
-        modules.load)
-          generate_modules_load "$KERNEL_MODULES_DIR/modules.dep" "$WORKDIR/system_dlkm/system_dlkm/lib/modules/modules.load"
-          ;;
-        *) error "File $oke is not found." ;;
-      esac
-    done
+log "Building system dlkm image..."
+KERNEL_MODULES_DIR="$(realpath $OUTDIR/out_modules/lib/modules/*)"
+KERNEL_MODULES_LIST=$(find "$KERNEL_MODULES_DIR" -type f -name '*.ko' | grep -viE 'kunit|test')
+MISSING=""
+shopt -s nullglob
+for idunno in $(echo $WORKDIR/system_dlkm/system_dlkm/lib/modules/modules.*); do
+  idunno=$(basename "$idunno")
+  if [ -f "$KERNEL_MODULES_DIR/$idunno" ]; then
+    cp $KERNEL_MODULES_DIR/$idunno $WORKDIR/system_dlkm/system_dlkm/lib/modules
+  else
+    MISSING+="$idunno "
   fi
+done
+shopt -u nullglob
 
-  # Copy the kernel modules
-  cp $KERNEL_MODULES_LIST $WORKDIR/system_dlkm/system_dlkm/lib/modules
-
-  # Generate fs configs
-  for f in $WORKDIR/system_dlkm/system_dlkm/lib/modules/*; do
-    echo "system_dlkm/lib/modules/$(basename $f) 0 0 0644" \
-      >> $WORKDIR/system_dlkm/config/system_dlkm_fs_config
+if [[ "$MISSING" ]]; then
+  for oke in $MISSING; do
+    case "$oke" in
+      modules.load)
+        generate_modules_load "$KERNEL_MODULES_DIR/modules.dep" "$WORKDIR/system_dlkm/system_dlkm/lib/modules/modules.load"
+        ;;
+      *) error "File $oke is not found." ;;
+    esac
   done
-
-  # Generate file contexts
-  for f in $WORKDIR/system_dlkm/system_dlkm/lib/modules/*; do
-    echo "/system_dlkm/lib/modules/$(basename "$f" | sed 's|\.ko$|\\.ko|') u:object_r:system_dlkm_file:s0" \
-      >> $WORKDIR/system_dlkm/config/system_dlkm_file_contexts
-  done
-
-  # We need to rewrite the modules.dep
-  rewrite_modules_dep "$WORKDIR/system_dlkm/system_dlkm/lib/modules/modules.dep"
-
-  # Build the actual image
-  mkfs_erofs "$WORKDIR/system_dlkm/system_dlkm" "$WORKDIR/system_dlkm.img"
 fi
+
+# Copy the kernel modules
+cp $KERNEL_MODULES_LIST $WORKDIR/system_dlkm/system_dlkm/lib/modules
+
+# Generate fs configs
+for f in $WORKDIR/system_dlkm/system_dlkm/lib/modules/*; do
+  echo "system_dlkm/lib/modules/$(basename $f) 0 0 0644" \
+    >> $WORKDIR/system_dlkm/config/system_dlkm_fs_config
+done
+
+# Generate file contexts
+for f in $WORKDIR/system_dlkm/system_dlkm/lib/modules/*; do
+  echo "/system_dlkm/lib/modules/$(basename "$f" | sed 's|\.ko$|\\.ko|') u:object_r:system_dlkm_file:s0" \
+    >> $WORKDIR/system_dlkm/config/system_dlkm_file_contexts
+done
+
+# We need to rewrite the modules.dep
+rewrite_modules_dep "$WORKDIR/system_dlkm/system_dlkm/lib/modules/modules.dep"
+
+# Build the actual image
+mkfs_erofs "$WORKDIR/system_dlkm/system_dlkm" "$WORKDIR/system_dlkm.img"
 
 # Check KMI Function symbol
 # $KMI_CHECK "$KSRC/android/abi_gki_aarch64.xml" "$MODULE_SYMVERS"
