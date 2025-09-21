@@ -328,16 +328,11 @@ else
     $WORKDIR/anykernel/anykernel.sh
 fi
 
-# Compress the system_dlkm directory with tar (for AnyKernel)
-cd $WORKDIR/system_dlkm
-tar -cJf "$WORKDIR/system_dlkm.tar.xz" *
-cd $OLDPWD
-
 # Zip the anykernel
 cd anykernel
 log "Zipping anykernel..."
 cp $KERNEL_IMAGE .
-cp $WORKDIR/system_dlkm.tar.xz .
+cp "$WORKDIR/system_dlkm.img" .
 zip -r9 $WORKDIR/$AK3_ZIP_NAME ./*
 cd $OLDPWD
 
