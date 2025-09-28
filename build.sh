@@ -4,7 +4,7 @@
 function env() {
 export KERNEL_NAME=mrt-Kernel
 KERNEL_ROOTDIR=$CIRRUS_WORKING_DIR/$DEVICE_CODENAME
-DEVICE_DEFCONFIG=vendor/xiaomi/lime.config
+DEVICE_DEFCONFIG=vendor/bengal-perf_defconfig
 CLANG_ROOTDIR=$CIRRUS_WORKING_DIR/greenforce-clang
 CLANG_VER="$("$CLANG_ROOTDIR"/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')"
 LLD_VER="$("$CLANG_ROOTDIR"/bin/ld.lld --version | head -n 1)"
