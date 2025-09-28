@@ -1,36 +1,14 @@
-# Nama task pertama Anda (ini akan muncul di UI Cirrus dan GitHub Check)
-lint_task:
-  # Tentukan lingkungan eksekusi: container Linux menggunakan image Docker
-  container:
-    image: python:3.11 # Ganti dengan image Docker yang sesuai untuk proyek Anda
+env:
+  TZ: Asia/Jakarta
 
-  # Serangkaian perintah (script) yang akan dijalankan di dalam container
-  # Anda dapat memberi nama pada script agar lebih mudah dibaca di log
-  install_dependencies_script:
-    # Contoh: menginstal dependensi Python
-    - pip install -r requirements.txt
-    - pip install flake8
-    
-  # Skrip untuk linting (memeriksa gaya kode)
-  lint_script:
-    - flake8 . --max-line-length=100
+container:
+  image: mhmmdfdlyas/dockerfile:k-ubuntu
+  cpu: 8
+  memory: 32G
 
-# Nama task kedua
-test_task:
-  # Anda dapat menggunakan image yang sama, atau image lain
-  container:
-    image: python:3.11
-
-  # Task ini bergantung pada task 'lint_task'. 
-  # Artinya, task ini hanya akan berjalan jika 'lint_task' berhasil.
-  depends_on:
-    - lint_task 
-    
-  # Skrip instalasi dapat dibagi di antara task (gunakan YAML aliases untuk yang lebih kompleks)
-  install_script:
-    - pip install -r requirements.txt
-    
-  # Skrip untuk menjalankan tes
-  test_script:
-    - pytest
-
+cloning_task:
+  name: Test
+  timeout_in: 120m
+  only_if: $CIRRUS_BRANCH == 'main'
+  script:
+    - echo "Hello word!"
