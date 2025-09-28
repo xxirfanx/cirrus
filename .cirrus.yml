@@ -33,3 +33,4 @@ test_task:
   # Skrip untuk menjalankan tes
   test_script:
     - pytest
+
