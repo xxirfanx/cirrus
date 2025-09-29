@@ -133,7 +133,7 @@ if ksu_included; then
 
   # Install kernelsu
   case "$KSU" in
-    "Next") install_ksu pershoot/KernelSU-Next $(susfs_included && echo next-susfs || echo next) ;;
+    "Next") install_ksu $(susfs_included && echo "GoRhanHee/KernelSU-Next" || echo "KernelSU-Next/KernelSU-Next") $(susfs_included && echo "next-susfs-experimental" || echo "next") ;;
     "Suki") install_ksu SukiSU-Ultra/SukiSU-Ultra $(if susfs_included; then echo "susfs-main"; elif ksu_manual_hook; then echo "nongki"; else echo "main"; fi) ;;
   esac
   config --enable CONFIG_KSU
@@ -159,13 +159,13 @@ fi
 # KSU Manual Hooks
 if ksu_manual_hook; then
   log "Applying manual hook patch"
-  if [[ "$KSU" == "Next" ]]; then
-    log "Using manual-hook v1.5"
-    patch -p1 --forward --fuzz=3 < $WORKDIR/kernel-patches/manual-hook-v1.5.patch
-  else
-    log "Using manual-hook v1.4"
-    patch -p1 --forward < $WORKDIR/kernel-patches/manual-hook-v1.4.patch
-  fi
+  #  if [[ "$KSU" == "Next" ]]; then
+  #    log "Using manual-hook v1.5"
+  #    patch -p1 --forward --fuzz=3 < $WORKDIR/kernel-patches/manual-hook-v1.5.patch
+  #  else
+  #    log "Using manual-hook v1.4"
+  patch -p1 --forward < $WORKDIR/kernel-patches/manual-hook-v1.4.patch
+  #  fi
   config --enable CONFIG_KSU_MANUAL_HOOK
   config --disable CONFIG_KSU_KPROBES_HOOK
   config --disable CONFIG_KSU_SUSFS_SUS_SU # Conflicts with manual hook
