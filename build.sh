@@ -60,7 +60,7 @@ if [[ -z "$CLANG_BRANCH" ]]; then
   wget -qO clang-archive "$CLANG_URL"
   mkdir -p "$CLANG_DIR"
   case "$(basename $CLANG_URL)" in
-    *.tar.*|*.tgz)
+    *.tar.* | *.tgz)
       tar -xf clang-archive -C "$CLANG_DIR"
       ;;
     *.7z)
@@ -150,7 +150,7 @@ if susfs_included; then
   git clone --depth=1 -q https://gitlab.com/simonpunk/susfs4ksu -b $SUSFS_BRANCH $SUSFS_DIR
   cp -R $SUSFS_PATCHES/fs/* ./fs
   cp -R $SUSFS_PATCHES/include/* ./include
-  patch -p1 < $SUSFS_PATCHES/50_add_susfs_in_gki-android15-6.6.patch
+  patch -p1 < $WORKDIR/kernel-patches//50_add_susfs_in_gki-android15-6.6.patch
   SUSFS_VERSION=$(grep -E '^#define SUSFS_VERSION' ./include/linux/susfs.h | cut -d' ' -f3 | sed 's/"//g')
   config --enable CONFIG_KSU_SUSFS
 else
