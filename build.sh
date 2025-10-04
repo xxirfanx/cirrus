@@ -12,9 +12,9 @@ ANYKERNEL_REPO="https://github.com/linastorvaldz/anykernel"
 ANYKERNEL_BRANCH="android15-6.6"
 KERNEL_REPO="https://github.com/linastorvaldz/kernel_common"
 KERNEL_BRANCH="android15-6.6-2024-08"
-KERNEL_DEFCONFIG="gki_defconfig"
+KERNEL_DEFCONFIG="quartix_defconfig"
 GKI_RELEASES_REPO="https://github.com/linastorvaldz/quartix-releases"
-CLANG_URL="https://github.com/linastorvaldz/idk/releases/download/clang-r510928/clang.tar.gz"
+CLANG_URL="https://github.com/linastorvaldz/idk/releases/download/clang-r547379/clang.tgz"
 CLANG_BRANCH=""
 AK3_ZIP_NAME="AK3-$KERNEL_NAME-REL-KVER-VARIANT-BUILD_DATE.zip"
 OUTDIR="$WORKDIR/out"
@@ -137,6 +137,7 @@ if ksu_included; then
     "Suki") install_ksu SukiSU-Ultra/SukiSU-Ultra $(if susfs_included; then echo "susfs-main"; elif ksu_manual_hook; then echo "nongki"; else echo "main"; fi) ;;
   esac
   config --enable CONFIG_KSU
+  config --disable CONFIG_KSU_MANUAL_SU
 fi
 
 # SUSFS
@@ -159,13 +160,11 @@ fi
 # KSU Manual Hooks
 if ksu_manual_hook; then
   log "Applying manual hook patch"
-  #  if [[ "$KSU" == "Next" ]]; then
-  #    log "Using manual-hook v1.5"
-  #    patch -p1 --forward --fuzz=3 < $WORKDIR/kernel-patches/manual-hook-v1.5.patch
-  #  else
-  #    log "Using manual-hook v1.4"
-  patch -p1 --forward < $WORKDIR/kernel-patches/manual-hook-v1.4.patch
-  #  fi
+  if [[ "$KSU" == "Suki" ]]; then
+    patch -p1 --forward --fuzz=3 < $WORKDIR/kernel-patches/manual-hook-v1.5.patch
+  else
+    patch -p1 --forward < $WORKDIR/kernel-patches/manual-hook-v1.4.patch
+  fi
   config --enable CONFIG_KSU_MANUAL_HOOK
   config --disable CONFIG_KSU_KPROBES_HOOK
   config --disable CONFIG_KSU_SUSFS_SUS_SU # Conflicts with manual hook
