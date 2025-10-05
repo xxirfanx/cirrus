@@ -133,7 +133,7 @@ if ksu_included; then
 
   # Install kernelsu
   case "$KSU" in
-    "Next") install_ksu $(susfs_included && echo "GoRhanHee/KernelSU-Next" || echo "KernelSU-Next/KernelSU-Next") $(susfs_included && echo "next-susfs-experimental" || echo "next") ;;
+    "Next") install_ksu KernelSU-Next/KernelSU-Next next ;;
     "Suki") install_ksu SukiSU-Ultra/SukiSU-Ultra $(if susfs_included; then echo "susfs-main"; elif ksu_manual_hook; then echo "nongki"; else echo "main"; fi) ;;
   esac
   config --enable CONFIG_KSU
@@ -152,6 +152,24 @@ if susfs_included; then
   cp -R $SUSFS_PATCHES/include/* ./include
   patch -p1 < $WORKDIR/kernel-patches//50_add_susfs_in_gki-android15-6.6.patch
   SUSFS_VERSION=$(grep -E '^#define SUSFS_VERSION' ./include/linux/susfs.h | cut -d' ' -f3 | sed 's/"//g')
+
+  # KernelSU-side
+  log "Applying kernelsu-side susfs patches.."
+  KERNEL_PATCHES_DIR="$PWD/kernel_patches"
+  SUSFS_FIX_PATCHES="$KERNEL_PATCHES_DIR/next/susfs_fix_patches/$SUSFS_VERSION"
+  git clone --depth=1 -q https://github.com/WildKernels/kernel_patches $KERNEL_PATCHES_DIR
+  if [ ! -d "$SUSFS_FIX_PATCHES" ]; then
+    error "susfs fix patches are not available for susfs $SUSFS_VERSION."
+  fi
+  cd KernelSU-Next
+  patch -p1 < $SUSFS_PATCHES/KernelSU/10_enable_susfs_for_ksu.patch
+  # apply the fix patches
+  for p in "$SUSFS_FIX_PATCHES"/*.patch; do
+    patch -p1 --forward --fuzz=3 < $p
+  done
+  # cleanup .orig / .rej
+  find . -type f \( -name '*.orig' -o -name '*.rej' \) -delete
+  cd $OLDPWD
   config --enable CONFIG_KSU_SUSFS
 else
   config --disable CONFIG_KSU_SUSFS
