@@ -11,8 +11,6 @@ on:
         type: string
       KSU_MANUAL_HOOK:
         type: string
-      BUILD_BOOTIMG:
-        type: string
       LAST_BUILD:
         type: string
 
@@ -138,7 +136,6 @@ jobs:
           KSU: ${{ inputs.KSU }}
           KSU_SUSFS: ${{ inputs.KSU_SUSFS }}
           KSU_MANUAL_HOOK: ${{ inputs.KSU_MANUAL_HOOK }}
-          BUILD_BOOTIMG: ${{ inputs.BUILD_BOOTIMG }}
           LAST_BUILD: ${{ inputs.LAST_BUILD }}
           TODO: ${{ inputs.TODO }}
         run: |

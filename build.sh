@@ -297,71 +297,10 @@ cp $KERNEL_IMAGE .
 zip -r9 $WORKDIR/$AK3_ZIP_NAME ./*
 cd $OLDPWD
 
-if [[ $BUILD_BOOTIMG == "true" ]]; then
-  AOSP_MIRROR=https://android.googlesource.com
-  AOSP_BRANCH=main-kernel-build-2024
-  log "Cloning build tools..."
-  git clone -q --depth=1 $AOSP_MIRROR/kernel/prebuilts/build-tools -b $AOSP_BRANCH build-tools
-  log "Cloning mkbootimg..."
-  git clone -q --depth=1 $AOSP_MIRROR/platform/system/tools/mkbootimg -b $AOSP_BRANCH mkbootimg
-
-  AVBTOOL="$WORKDIR/build-tools/linux-x86/bin/avbtool"
-  MKBOOTIMG="$WORKDIR/mkbootimg/mkbootimg.py"
-  UNPACK_BOOTIMG="$WORKDIR/mkbootimg/unpack_bootimg.py"
-  BOOT_SIGN_KEY_PATH="$WORKDIR/key/key.pem"
-  BOOTIMG_NAME="${AK3_ZIP_NAME%.zip}-boot-dummy1.img"
-
-  generate_bootimg() {
-    local kernel="$1"
-    local output="$2"
-
-    # Create boot image
-    log "Creating $output"
-    $MKBOOTIMG --header_version 4 \
-      --kernel "$kernel" \
-      --output "$output" \
-      --ramdisk out/ramdisk \
-      --os_version 15.0.0 \
-      --os_patch_level "2099-12"
-
-    sleep 0.5
-
-    # Sign the boot image
-    log "Signing $output"
-    $AVBTOOL add_hash_footer \
-      --partition_name boot \
-      --partition_size $((64 * 1024 * 1024)) \
-      --image "$output" \
-      --algorithm SHA256_RSA2048 \
-      --key $BOOT_SIGN_KEY_PATH
-  }
-
-  tempdir=$(mktemp -d) && cd $tempdir
-  cp $KERNEL_IMAGE .
-  gzip -n -f -9 -c Image > Image.gz
-  lz4 -l -12 --favor-decSpeed Image Image.lz4
-
-  log "Downloading ramdisk..."
-  wget -qO gki.zip https://dl.google.com/android/gki/gki-certified-boot-android15-6.6-2025-05_r2.zip
-  unzip -q gki.zip && rm gki.zip
-  $UNPACK_BOOTIMG --boot_img=boot-6.6.img && rm boot-6.6.img
-
-  for format in raw lz4 gz; do
-    kernel="./Image"
-    [[ $format != "raw" ]] && kernel+=".$format"
-
-    _output="${BOOTIMG_NAME/dummy1/$format}"
-    generate_bootimg "$kernel" "$_output"
-
-    mv "$_output" $WORKDIR
-  done
-  cd $WORKDIR
-fi
-
 if [[ $STATUS != "BETA" ]]; then
   echo "BASE_NAME=$KERNEL_NAME-$VARIANT" >> $GITHUB_ENV
   mkdir -p $WORKDIR/artifacts
-  mv $WORKDIR/*.zip $WORKDIR/*.img $WORKDIR/artifacts
+  mv $WORKDIR/*.zip $WORKDIR/artifacts
 fi
 
 if [[ $LAST_BUILD == "true" && $STATUS != "BETA" ]]; then
