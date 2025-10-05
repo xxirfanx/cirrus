@@ -230,7 +230,6 @@ text=$(
 🔰 *Compiler*: $COMPILER_STRING
 EOF
 )
-MESSAGE_ID=$(send_msg "$text" 2>&1 | jq -r .result.message_id)
 
 ## Build GKI
 log "Generating config..."
@@ -375,10 +374,10 @@ if [[ $LAST_BUILD == "true" && $STATUS != "BETA" ]]; then
 fi
 
 if [[ $STATUS == "BETA" ]]; then
-  reply_file "$MESSAGE_ID" "$WORKDIR/$AK3_ZIP_NAME"
-  reply_file "$MESSAGE_ID" "$WORKDIR/build.log"
+  send_file "$WORKDIR/$AK3_ZIP_NAME" "$text"
+  send_file "$WORKDIR/build.log"
 else
-  reply_msg "$MESSAGE_ID" "✅ Build Succeeded"
+  send_msg "✅ Build Succeeded for $VARIANT variant."
 fi
 
 exit 0

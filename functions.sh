@@ -5,50 +5,30 @@
 # ==============
 
 # Telegram functions
-# upload_file <path/to/file>
+# upload_file
 upload_file() {
   local FILE="$1"
+  local CAPTION="${2:-}"
+
   if ! [[ -f $FILE ]]; then
     error "file $FILE doesn't exist"
   fi
-  chmod 777 $FILE
-  curl -s -F document=@"$FILE" "https://api.telegram.org/bot$TG_BOT_TOKEN/sendDocument" \
-    -F "chat_id=$TG_CHAT_ID" \
+
+  chmod 777 "$FILE"
+
+  curl -s -F "document=@${FILE}" \
+    -F "chat_id=${TG_CHAT_ID}" \
+    -F "caption=${CAPTION}" \
+    -F "parse_mode=markdown" \
     -F "disable_web_page_preview=true" \
-    -F "parse_mode=markdown"
+    "https://api.telegram.org/bot${TG_BOT_TOKEN}/sendDocument"
 }
 
-# reply_file <message_id> <path/to/file>
-reply_file() {
-  local MESSAGE_ID="$1"
-  local FILE="$2"
-  if ! [[ -f $FILE ]]; then
-    error "file $FILE doesn't exist"
-  fi
-  chmod 777 $FILE
-  curl -s -F document=@"$FILE" "https://api.telegram.org/bot$TG_BOT_TOKEN/sendDocument" \
-    -F "chat_id=$TG_CHAT_ID" \
-    -F "reply_to_message_id=$MESSAGE_ID" \
-    -F "disable_web_page_preview=true" \
-    -F "parse_mode=markdown"
-}
-
-# send_msg <text>
+# send_msg
 send_msg() {
   local MESSAGE="$1"
   curl -s -X POST "https://api.telegram.org/bot$TG_BOT_TOKEN/sendMessage" \
     -d "chat_id=$TG_CHAT_ID" \
-    -d "disable_web_page_preview=true" \
-    -d "parse_mode=markdown" \
-    -d "text=$MESSAGE"
-}
-# reply_msg <text>
-reply_msg() {
-  local MESSAGE_ID="$1"
-  local MESSAGE="$2"
-  curl -s -X POST "https://api.telegram.org/bot$TG_BOT_TOKEN/sendMessage" \
-    -d "chat_id=$TG_CHAT_ID" \
-    -d "reply_to_message_id=$MESSAGE_ID" \
     -d "disable_web_page_preview=true" \
     -d "parse_mode=markdown" \
     -d "text=$MESSAGE"
@@ -110,13 +90,15 @@ log() {
 }
 
 error() {
+  local err_txt
+  err_txt=$(
+    cat << EOF
+*Kernel CI*
+ERRROR: $*
+EOF
+  )
   echo -e "[ERROR] $*"
-  if [[ -n $MESSAGE_ID ]]; then
-    reply_msg "$MESSAGE_ID" "❌ ERROR: $*"
-    reply_file "$MESSAGE_ID" "$WORKDIR/build.log"
-  else
-    send_msg "❌ ERROR: $*"
-    upload_file "$WORKDIR/build.log"
-  fi
+  send_msg "$err_txt"
+  upload_file "$WORKDIR/build.log"
   exit 1
 }
