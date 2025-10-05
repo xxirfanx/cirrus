@@ -221,7 +221,6 @@ KERNEL_IMAGE="$OUTDIR/arch/arm64/boot/Image"
 
 text=$(
   cat << EOF
-*$KERNEL_NAME CI*
 🐧 *Linux Version*: $LINUX_VERSION
 📅 *Build Date*: $KBUILD_BUILD_TIMESTAMP
 📛 *KernelSU*: ${KSU}
