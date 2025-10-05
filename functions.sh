@@ -94,7 +94,7 @@ error() {
   err_txt=$(
     cat << EOF
 *Kernel CI*
-ERRROR: $*
+ERROR: $*
 EOF
   )
   echo -e "[ERROR] $*"
