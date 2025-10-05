@@ -311,8 +311,8 @@ if [[ $LAST_BUILD == "true" && $STATUS != "BETA" ]]; then
 fi
 
 if [[ $STATUS == "BETA" ]]; then
-  send_file "$WORKDIR/$AK3_ZIP_NAME" "$text"
-  send_file "$WORKDIR/build.log"
+  upload_file "$WORKDIR/$AK3_ZIP_NAME" "$text"
+  upload_file "$WORKDIR/build.log"
 else
   send_msg "✅ Build Succeeded for $VARIANT variant."
 fi
