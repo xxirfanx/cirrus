@@ -162,9 +162,7 @@ if susfs_included; then
     error "susfs fix patches are not available for susfs $SUSFS_VERSION."
   fi
   cd KernelSU-Next
-  set +e
   patch -p1 < $SUSFS_PATCHES/KernelSU/10_enable_susfs_for_ksu.patch
-  set -e
   # apply the fix patches
   for p in "$SUSFS_FIX_PATCHES"/*.patch; do
     patch -p1 --forward --fuzz=3 < $p
