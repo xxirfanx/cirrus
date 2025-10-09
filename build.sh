@@ -165,7 +165,7 @@ function compile() {
     ANYKERNEL_DIR="$CIRRUS_WORKING_DIR/AnyKernel"
     rm -rf "$ANYKERNEL_DIR" # Hapus jika sudah ada untuk memastikan klon baru
 	git clone --depth=1 "$ANYKERNEL" "$ANYKERNEL_DIR" || finerr
-	cp "$IMAGE" "$ANYKERNEL_DIR" || finerr
+	mv -f "oImage" "$ANYKERNEL_DIR/Image" || finerr
 }
 
 # Mendapatkan informasi commit dan kernel
