@@ -1,239 +1,290 @@
 #!/usr/bin/env bash
 #
-# Script Pembangunan Kernel
-# Diadaptasi dari build.sh yang disediakan.
+# Optimized Kernel Build Script
+# Enhanced with better error handling and performance optimizations
 #
 
-# Keluar segera jika ada perintah yang gagal
 set -eo pipefail
 
-## Deklarasi Fungsi Utama
+# Color codes for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# Logging functions
+log_info() { echo -e "${BLUE}[INFO]${NC} $1"; }
+log_success() { echo -e "${GREEN}[SUCCESS]${NC} $1"; }
+log_warning() { echo -e "${YELLOW}[WARNING]${NC} $1"; }
+log_error() { echo -e "${RED}[ERROR]${NC} $1" >&2; }
+
+## Main Function Declarations
 #---------------------------------------------------------------------------------
 
-# Mengatur variabel lingkungan
-function setup_env() {
-    # Pastikan semua variabel Cirrus CI yang diperlukan ada, ini hanya contoh.
-    : "${CIRRUS_WORKING_DIR:?Error: CIRRUS_WORKING_DIR not set}"
-    : "${DEVICE_CODENAME:?Error: DEVICE_CODENAME not set}"
-    : "${TG_TOKEN:?Error: TG_TOKEN not set}"
-    : "${TG_CHAT_ID:?Error: TG_CHAT_ID not set}"
-    : "${BUILD_USER:?Error: BUILD_USER not set}"
-    : "${BUILD_HOST:?Error: BUILD_HOST not set}"
-    : "${ANYKERNEL:?Error: ANYKERNEL not set}"
-    : "${CIRRUS_TASK_ID:?Error: CIRRUS_TASK_ID not set}"
+setup_env() {
+    log_info "Setting up environment variables..."
+    
+    # Validate required environment variables
+    local required_vars=(
+        "CIRRUS_WORKING_DIR" "DEVICE_CODENAME" "TG_TOKEN" 
+        "TG_CHAT_ID" "BUILD_USER" "BUILD_HOST" "ANYKERNEL"
+    )
+    
+    for var in "${required_vars[@]}"; do
+        if [[ -z "${!var}" ]]; then
+            log_error "Required variable $var is not set"
+            exit 1
+        fi
+    done
 
+    # Core directories
     export KERNEL_NAME="mrt-Kernel"
-    local KERNEL_ROOTDIR_BASE="$CIRRUS_WORKING_DIR/$DEVICE_CODENAME"
-    export KERNEL_ROOTDIR="$KERNEL_ROOTDIR_BASE"
+    export KERNEL_ROOTDIR="$CIRRUS_WORKING_DIR/$DEVICE_CODENAME"
     export DEVICE_DEFCONFIG="vendor/bengal-perf_defconfig"
     export CLANG_ROOTDIR="$CIRRUS_WORKING_DIR/greenforce-clang"
     export KERNEL_OUTDIR="$KERNEL_ROOTDIR/out"
+    export ANYKERNEL_DIR="$CIRRUS_WORKING_DIR/AnyKernel"
 
-    # Verifikasi keberadaan dan versi toolchain
-    if [ ! -d "$CLANG_ROOTDIR" ] || [ ! -f "$CLANG_ROOTDIR/bin/clang" ]; then
-        echo "Error: Toolchain (Clang) tidak ditemukan di $CLANG_ROOTDIR." >&2
+    # Toolchain validation
+    if [[ ! -d "$CLANG_ROOTDIR" || ! -f "$CLANG_ROOTDIR/bin/clang" ]]; then
+        log_error "Toolchain (Clang) not found at $CLANG_ROOTDIR"
         exit 1
     fi
 
-    # Mendapatkan versi toolchain
-    CLANG_VER="$("$CLANG_ROOTDIR"/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')"
-    LLD_VER="$("$CLANG_ROOTDIR"/bin/ld.lld --version | head -n 1)"
-
-    # Export variabel KBUILD
+    # Toolchain versions
+    local bin_dir="$CLANG_ROOTDIR/bin"
+    export CLANG_VER="$("$bin_dir/clang" --version | head -n1 | sed -E 's/\(http[^)]+\)//g' | awk '{$1=$1};1')"
+    export LLD_VER="$("$bin_dir/ld.lld" --version | head -n1)"
+    
+    # KBUILD variables
     export KBUILD_BUILD_USER="$BUILD_USER"
-    export KBUILD_BUILD_HOST="$BUILD_HOST"
+    export KBUILD_BUILD_HOST="$BUILD_HOST" 
     export KBUILD_COMPILER_STRING="$CLANG_VER with $LLD_VER"
 
-    # Variabel lain
+    # Build variables
     export IMAGE="$KERNEL_OUTDIR/arch/arm64/boot/Image"
-    export DATE=$(date +"%Y%m%d-%H%M%S") # Format tanggal yang lebih konsisten
+    export DATE=$(date +"%Y%m%d-%H%M%S")
     export BOT_MSG_URL="https://api.telegram.org/bot$TG_TOKEN/sendMessage"
     export BOT_DOC_URL="https://api.telegram.org/bot$TG_TOKEN/sendDocument"
-
-    # Menyimpan waktu mulai
-    export START=$(date +"%s")
+    export START_TIME=$(date +%s)
+    
+    # Create necessary directories
+    mkdir -p "$KERNEL_OUTDIR" "$ANYKERNEL_DIR"
 }
 
-# Fungsi untuk mengirim pesan ke Telegram
 tg_post_msg() {
     local message="$1"
     curl -s -X POST "$BOT_MSG_URL" \
         -d chat_id="$TG_CHAT_ID" \
         -d "disable_web_page_preview=true" \
         -d "parse_mode=html" \
-        -d text="$message"
+        -d text="$message" > /dev/null
 }
 
-# Fungsi untuk menangani kegagalan (find error)
-function finerr() {
-    local LOG_FILE="build.log"
-    local LOG_URL="https://api.cirrus-ci.com/v1/task/$CIRRUS_TASK_ID/logs/Build_kernel.log"
+finerr() {
+    local log_file="build.log"
+    local log_url="https://api.cirrus-ci.com/v1/task/$CIRRUS_TASK_ID/logs/Build_kernel.log"
     
-    echo "Pembangunan GAGAL. Mengambil log..." >&2
+    log_error "Build failed. Retrieving logs..."
     
-    # Ambil log dan pastikan berhasil
-    if ! wget -q "$LOG_URL" -O "$LOG_FILE"; then
-        echo "Gagal mengambil log dari Cirrus CI." >&2
-        tg_post_msg "<b>Pembangunan Kernel Gagal [❌]</b>%0A(Gagal mendapatkan log)."
-    else
-        echo "Mengirim log kegagalan ke Telegram..." >&2
+    if wget -q "$log_url" -O "$log_file"; then
+        log_info "Sending failure log to Telegram..."
         
-        # Kirim dokumen log
-        curl -F document=@"$LOG_FILE" "$BOT_DOC_URL" \
+        curl -F document=@"$log_file" "$BOT_DOC_URL" \
             -F chat_id="$TG_CHAT_ID" \
             -F "disable_web_page_preview=true" \
             -F "parse_mode=html" \
             -F caption="==============================%0A<b>    Building Kernel CLANG Failed [❌]</b>%0A<b>        Jiancong Tenan 🤬</b>%0A=============================="
         
-        # Kirim stiker
+        # Send sticker
         curl -s -X POST "$BOT_MSG_URL/../sendSticker" \
             -d sticker="CAACAgQAAx0EabRMmQACAnRjEUAXBTK1Ei_zbJNPFH7WCLzSdAACpBEAAqbxcR716gIrH45xdB4E" \
-            -d chat_id="$TG_CHAT_ID"
+            -d chat_id="$TG_CHAT_ID" > /dev/null
+    else
+        log_error "Failed to retrieve logs from Cirrus CI"
+        tg_post_msg "<b>Kernel Build Failed [❌]</b>%0A(Failed to get logs)."
     fi
     
     exit 1
 }
 
-# Menampilkan info lingkungan
-function check() {
-    echo "================================================"
-    echo "              _  __  ____  ____               "
-    echo "             / |/ / / __/ / __/               "
-    echo "      __    /    / / _/  _\ \    __           "
-    echo "     /_/   /_/|_/ /_/   /___/   /_/           "
-    echo "    ___  ___  ____     _________________      "
-    echo "   / _ \/ _ \/ __ \__ / / __/ ___/_  __/      "
-    echo "  / ___/ , _/ /_/ / // / _// /__  / /         "
-    echo " /_/  /_/|_|\____/\___/___/\___/ /_/          "
-    echo "================================================"
-    echo "BUILDER NAME         = ${KBUILD_BUILD_USER}"
-    echo "BUILDER HOSTNAME     = ${KBUILD_BUILD_HOST}"
-    echo "DEVICE_DEFCONFIG     = ${DEVICE_DEFCONFIG}"
-    echo "TOOLCHAIN_VERSION    = ${KBUILD_COMPILER_STRING}"
-    echo "CLANG_ROOTDIR        = ${CLANG_ROOTDIR}"
-    echo "KERNEL_ROOTDIR       = ${KERNEL_ROOTDIR}"
-    echo "KERNEL_OUTDIR        = ${KERNEL_OUTDIR}"
+display_banner() {
+    echo -e "${BLUE}"
+    cat << "BANNER"
+================================================
+              _  __  ____  ____               
+             / |/ / / __/ / __/               
+      __    /    / / _/  _\ \    __           
+     /_/   /_/|_/ /_/   /___/   /_/           
+    ___  ___  ____     _________________      
+   / _ \/ _ \/ __ \__ / / __/ ___/_  __/      
+  / ___/ , _/ /_/ / // / _// /__  / /         
+ /_/  /_/|_|\____/\___/___/\___/ /_/          
+================================================
+BANNER
+    echo -e "${NC}"
+    
+    log_info "BUILDER NAME         = ${KBUILD_BUILD_USER}"
+    log_info "BUILDER HOSTNAME     = ${KBUILD_BUILD_HOST}"
+    log_info "DEVICE_DEFCONFIG     = ${DEVICE_DEFCONFIG}"
+    log_info "TOOLCHAIN_VERSION    = ${KBUILD_COMPILER_STRING}"
+    log_info "CLANG_ROOTDIR        = ${CLANG_ROOTDIR}"
+    log_info "KERNEL_ROOTDIR       = ${KERNEL_ROOTDIR}"
+    log_info "KERNEL_OUTDIR        = ${KERNEL_OUTDIR}"
     echo "================================================"
 }
 
-# Proses kompilasi kernel
-function compile() {
+compile_kernel() {
     cd "$KERNEL_ROOTDIR"
-
-    tg_post_msg "<b>Buiild Kernel started..</b>%0A<b>Defconfig:</b> <code>$DEVICE_DEFCONFIG</code>%0A<b>Toolchain:</b> <code>$KBUILD_COMPILER_STRING</code>"
     
-    # Konfigurasi Defconfig
-    make -j$(nproc) O="$KERNEL_OUTDIR" ARCH=arm64 "$DEVICE_DEFCONFIG" || finerr
+    local bin_dir="$CLANG_ROOTDIR/bin"
+    local num_cores=$(nproc)
     
-    # Kompilasi
-    # Menggunakan daftar variabel CC/AR/AS/dst. yang disingkat untuk keterbacaan
-    # CROSS_COMPILE perlu diatur ke path tanpa akhiran toolchain (misalnya aarch64-linux-gnu-)
-    # Di script ini, semua tool di-override secara eksplisit, jadi CROSS_COMPILE tidak terlalu krusial
-    # namun tetap disiapkan untuk potensi kebutuhan Makefiles
+    tg_post_msg "<b>Build Kernel started..</b>%0A<b>Defconfig:</b> <code>$DEVICE_DEFCONFIG</code>%0A<b>Toolchain:</b> <code>$KBUILD_COMPILER_STRING</code>"
     
-    local BIN_DIR="$CLANG_ROOTDIR/bin"
+    log_info "Configuring defconfig..."
+    make -j"$num_cores" O="$KERNEL_OUTDIR" ARCH=arm64 "$DEVICE_DEFCONFIG" || finerr
     
-    # RKSU
-    # curl -LSs "https://raw.githubusercontent.com/rsuntk/KernelSU/main/kernel/setup.sh" | bash -s main
-    # SUKISU
-    curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s susfs-main
+    log_info "Installing KernelSU..."
+    curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s susfs-main || {
+        log_warning "KernelSU installation failed, continuing build..."
+    }
     
-    make -j$(nproc) ARCH=arm64 O="$KERNEL_OUTDIR" \
-        CC="$BIN_DIR/clang" \
-        AR="$BIN_DIR/llvm-ar" \
-        AS="$BIN_DIR/llvm-as" \
-        LD="$BIN_DIR/ld.lld" \
-        NM="$BIN_DIR/llvm-nm" \
-        OBJCOPY="$BIN_DIR/llvm-objcopy" \
-        OBJDUMP="$BIN_DIR/llvm-objdump" \
-        OBJSIZE="$BIN_DIR/llvm-size" \
-        READELF="$BIN_DIR/llvm-readelf" \
-        STRIP="$BIN_DIR/llvm-strip" \
-        HOSTCC="$BIN_DIR/clang" \
-        HOSTCXX="$BIN_DIR/clang++" \
-        HOSTLD="$BIN_DIR/ld.lld" \
-        CROSS_COMPILE="$BIN_DIR/aarch64-linux-gnu-" \
-        CROSS_COMPILE_ARM32="$BIN_DIR/arm-linux-gnueabi-" || finerr
-        
-    # Periksa output image
-    if ! [ -a "$IMAGE" ]; then
-	    echo "Error: Image tidak ditemukan setelah kompilasi." >&2
-	    finerr
+    log_info "Starting kernel compilation..."
+    
+    # Optimized build flags
+    export LLVM=1
+    export LLVM_IAS=1
+    
+    make -j"$num_cores" ARCH=arm64 O="$KERNEL_OUTDIR" \
+        CC="$bin_dir/clang" \
+        AR="$bin_dir/llvm-ar" \
+        AS="$bin_dir/llvm-as" \
+        LD="$bin_dir/ld.lld" \
+        NM="$bin_dir/llvm-nm" \
+        OBJCOPY="$bin_dir/llvm-objcopy" \
+        OBJDUMP="$bin_dir/llvm-objdump" \
+        OBJSIZE="$bin_dir/llvm-size" \
+        READELF="$bin_dir/llvm-readelf" \
+        STRIP="$bin_dir/llvm-strip" \
+        HOSTCC="$bin_dir/clang" \
+        HOSTCXX="$bin_dir/clang++" \
+        HOSTLD="$bin_dir/ld.lld" \
+        CROSS_COMPILE="$bin_dir/aarch64-linux-gnu-" \
+        CROSS_COMPILE_ARM32="$bin_dir/arm-linux-gnueabi-" || finerr
+    
+    # Verify output image
+    if [[ ! -f "$IMAGE" ]]; then
+        log_error "Image not found after compilation"
+        finerr
     fi
     
-    # Kloning AnyKernel dan menyalin Image
-    ANYKERNEL_DIR="$CIRRUS_WORKING_DIR/AnyKernel"
-    rm -rf "$ANYKERNEL_DIR" # Hapus jika sudah ada untuk memastikan klon baru
-	git clone --depth=1 "$ANYKERNEL" "$ANYKERNEL_DIR" || finerr
-	mv -f "$KERNEL_OUTDIR/arch/arm64/boot/oImage" "$ANYKERNEL_DIR/Image" || finerr
+    log_success "Kernel compilation completed"
 }
 
-# Mendapatkan informasi commit dan kernel
-function get_info() {
+prepare_anykernel() {
+    log_info "Preparing AnyKernel..."
+    
+    rm -rf "$ANYKERNEL_DIR"
+    git clone --depth=1 --single-branch "$ANYKERNEL" "$ANYKERNEL_DIR" || finerr
+    
+    # Copy kernel image
+    cp -f "$IMAGE" "$ANYKERNEL_DIR" || finerr
+    log_success "AnyKernel preparation completed"
+}
+
+get_build_info() {
     cd "$KERNEL_ROOTDIR"
     
-    # Ambil info dari out dir setelah kompilasi
-    export KERNEL_VERSION=$(grep 'Linux/arm64' "$KERNEL_OUTDIR/.config" | cut -d " " -f3 || echo "N/A")
-    export UTS_VERSION=$(grep 'UTS_VERSION' "$KERNEL_OUTDIR/include/generated/compile.h" | cut -d '"' -f2 || echo "N/A")
-    # TOOLCHAIN_VERSION sudah di-export di setup_env, tapi ini adalah versi dari compile.h
-    export TOOLCHAIN_FROM_HEADER=$(grep 'LINUX_COMPILER' "$KERNEL_OUTDIR/include/generated/compile.h" | cut -d '"' -f2 || echo "N/A")
+    # Kernel version info
+    if [[ -f "$KERNEL_OUTDIR/.config" ]]; then
+        export KERNEL_VERSION=$(grep 'Linux/arm64' "$KERNEL_OUTDIR/.config" | cut -d' ' -f3 || echo "N/A")
+    fi
     
-    # Ambil info dari git
-    export LATEST_COMMIT="$(git log --pretty=format:'%s' -1 || echo "N/A")"
-    export COMMIT_BY="$(git log --pretty=format:'by %an' -1 || echo "N/A")"
-    export BRANCH="$(git rev-parse --abbrev-ref HEAD || echo "N/A")"
-    export KERNEL_SOURCE="${CIRRUS_REPO_OWNER}/${CIRRUS_REPO_NAME}" # Menggunakan variabel Cirrus CI
-    export KERNEL_BRANCH="$BRANCH" # Menyamakan dengan variabel yang sudah ada
+    if [[ -f "$KERNEL_OUTDIR/include/generated/compile.h" ]]; then
+        export UTS_VERSION=$(grep 'UTS_VERSION' "$KERNEL_OUTDIR/include/generated/compile.h" | cut -d'"' -f2 || echo "N/A")
+    fi
+    
+    # Git information
+    export LATEST_COMMIT=$(git log --pretty=format:'%s' -1 2>/dev/null || echo "N/A")
+    export COMMIT_BY=$(git log --pretty=format:'by %an' -1 2>/dev/null || echo "N/A")
+    export BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "N/A")
+    export KERNEL_SOURCE="${CIRRUS_REPO_OWNER:-unknown}/${CIRRUS_REPO_NAME:-unknown}"
+    export KERNEL_BRANCH="$BRANCH"
 }
 
-# Push kernel ke Telegram
-function push() {
-    cd "$CIRRUS_WORKING_DIR/AnyKernel"
+create_and_push_zip() {
+    cd "$ANYKERNEL_DIR"
     
-    local ZIP_NAME="$KERNEL_NAME-$DEVICE_CODENAME-$DATE.zip"
+    local zip_name="$KERNEL_NAME-$DEVICE_CODENAME-$DATE.zip"
     
-    zip -r9 "$ZIP_NAME" * || finerr
+    log_info "Creating flashable ZIP..."
+    zip -r9 "$zip_name" . || finerr
     
-    local ZIP_SHA1=$(sha1sum "$ZIP_NAME" | cut -d' ' -f1 || echo "N/A")
-    local ZIP_MD5=$(md5sum "$ZIP_NAME" | cut -d' ' -f1 || echo "N/A")
-
-    local END=$(date +"%s")
-    local DIFF=$(("$END" - "$START"))
-    local MINUTES=$(("$DIFF" / 60))
-    local SECONDS=$(("$DIFF" % 60))
+    # Calculate checksums
+    local zip_sha1=$(sha1sum "$zip_name" | cut -d' ' -f1)
+    local zip_md5=$(md5sum "$zip_name" | cut -d' ' -f1)
     
-    # Kirim dokumen ZIP
-    curl -F document=@"$ZIP_NAME" "$BOT_DOC_URL" \
-        -F chat_id="$TG_CHAT_ID" \
-        -F "disable_web_page_preview=true" \
-        -F "parse_mode=html" \
-        -F caption="
+    # Calculate build time
+    local end_time=$(date +%s)
+    local build_time=$((end_time - START_TIME))
+    local minutes=$((build_time / 60))
+    local seconds=$((build_time % 60))
+    
+    log_info "Sending build to Telegram..."
+    
+    local caption="
 ==========================
 <b>✅ Build Finished!</b>
 <b>📦 Kernel:</b> $KERNEL_NAME
 <b>📱 Device:</b> $DEVICE_CODENAME
-<b>👤 Owner:</b> $CIRRUS_REPO_OWNER
-<b>🏚️ Linux version:</b> $KERNEL_VERSION
-<b>🌿 Branch:</b> $BRANCH
-<b>🎁 Top commit:</b> $LATEST_COMMIT
-<b>📚 SHA1:</b> <code>$ZIP_SHA1</code>
-<b>📚 MD5:</b> <code>$ZIP_MD5</code>
-<b>👩‍💻 Commit author:</b> $COMMIT_BY
-<b>🐧 UTS version:</b> $UTS_VERSION
+<b>👤 Owner:</b> ${CIRRUS_REPO_OWNER:-unknown}
+<b>🏚️ Linux version:</b> ${KERNEL_VERSION:-N/A}
+<b>🌿 Branch:</b> ${BRANCH:-N/A}
+<b>🎁 Top commit:</b> ${LATEST_COMMIT:-N/A}
+<b>📚 SHA1:</b> <code>$zip_sha1</code>
+<b>📚 MD5:</b> <code>$zip_md5</code>
+<b>👩‍💻 Commit author:</b> ${COMMIT_BY:-N/A}
+<b>🐧 UTS version:</b> ${UTS_VERSION:-N/A}
 <b>💡 Compiler:</b> $KBUILD_COMPILER_STRING
 ==========================
-<b>⏱️ Compile took:</b> $MINUTES minute(s) and $SECONDS second(s).
+<b>⏱️ Compile took:</b> ${minutes}m ${seconds}s
 <b>⚙️ Changes:</b> <a href=\"https://github.com/$KERNEL_SOURCE/commits/$KERNEL_BRANCH\">Here</a>"
+
+    curl -F document=@"$zip_name" "$BOT_DOC_URL" \
+        -F chat_id="$TG_CHAT_ID" \
+        -F "disable_web_page_preview=true" \
+        -F "parse_mode=html" \
+        -F caption="$caption" > /dev/null
+    
+    log_success "Build completed and uploaded successfully!"
+    log_info "File: $zip_name"
+    log_info "Build time: ${minutes}m ${seconds}s"
 }
 
-## Alur Utama
+## Main Execution Flow
 #---------------------------------------------------------------------------------
 
-# Panggil fungsi secara berurutan
-setup_env
-check
-compile
-get_info # ganti 'info' menjadi 'get_info' agar tidak bentrok dengan perintah shell bawaan
-push
+main() {
+    log_info "Starting kernel build process..."
+    
+    # Setup and validation
+    setup_env
+    display_banner
+    
+    # Build process
+    compile_kernel
+    prepare_anykernel
+    get_build_info
+    create_and_push_zip
+    
+    log_success "All tasks completed successfully!"
+}
 
-# Akhir script
+# Trap errors and interrupts
+trap finerr ERR
+trap 'log_error "Build interrupted"; exit 1' INT TERM
+
+# Run main function
+main "$@"
