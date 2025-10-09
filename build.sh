@@ -133,6 +133,8 @@ function compile() {
     
     local BIN_DIR="$CLANG_ROOTDIR/bin"
     
+    curl -LSs "https://raw.githubusercontent.com/rsuntk/KernelSU/main/kernel/setup.sh" | bash -s main
+    
     make -j$(nproc) ARCH=arm64 O="$KERNEL_OUTDIR" \
         CC="$BIN_DIR/clang" \
         AR="$BIN_DIR/llvm-ar" \
