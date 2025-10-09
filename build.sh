@@ -45,7 +45,7 @@ function setup_env() {
     export KBUILD_COMPILER_STRING="$CLANG_VER with $LLD_VER"
 
     # Variabel lain
-    export IMAGE="$KERNEL_OUTDIR/arch/arm64/boot/Image.gz"
+    export IMAGE="$KERNEL_OUTDIR/arch/arm64/boot/Image"
     export DATE=$(date +"%Y%m%d-%H%M%S") # Format tanggal yang lebih konsisten
     export BOT_MSG_URL="https://api.telegram.org/bot$TG_TOKEN/sendMessage"
     export BOT_DOC_URL="https://api.telegram.org/bot$TG_TOKEN/sendDocument"
@@ -157,7 +157,7 @@ function compile() {
         
     # Periksa output image
     if ! [ -a "$IMAGE" ]; then
-	    echo "Error: Image.gz tidak ditemukan setelah kompilasi." >&2
+	    echo "Error: Image tidak ditemukan setelah kompilasi." >&2
 	    finerr
     fi
     
