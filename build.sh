@@ -220,7 +220,7 @@ create_and_push_zip() {
     local zip_name="$KERNEL_NAME-$DEVICE_CODENAME-$DATE.zip"
     
     log_info "Creating flashable ZIP..."
-    zip -r9 "$zip_name" . || finerr
+    zip -r9 "$zip_name" * || finerr
     
     # Calculate checksums
     local zip_sha1=$(sha1sum "$zip_name" | cut -d' ' -f1)
