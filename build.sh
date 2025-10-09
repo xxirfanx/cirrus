@@ -133,7 +133,10 @@ function compile() {
     
     local BIN_DIR="$CLANG_ROOTDIR/bin"
     
-    curl -LSs "https://raw.githubusercontent.com/rsuntk/KernelSU/main/kernel/setup.sh" | bash -s main
+    # RKSU
+    # curl -LSs "https://raw.githubusercontent.com/rsuntk/KernelSU/main/kernel/setup.sh" | bash -s main
+    # SUKISU
+    curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s susfs-main
     
     make -j$(nproc) ARCH=arm64 O="$KERNEL_OUTDIR" \
         CC="$BIN_DIR/clang" \
