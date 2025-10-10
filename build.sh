@@ -63,7 +63,7 @@ setup_env() {
     export KBUILD_COMPILER_STRING="$CLANG_VER with $LLD_VER"
 
     # Build variables
-    export IMAGE="$KERNEL_OUTDIR/arch/arm64/boot/Image"
+    export IMAGE="$KERNEL_OUTDIR/arch/arm64/boot/Image.gz"
     export DATE=$(date +"%Y%m%d-%H%M%S")
     export BOT_MSG_URL="https://api.telegram.org/bot$TG_TOKEN/sendMessage"
     export BOT_DOC_URL="https://api.telegram.org/bot$TG_TOKEN/sendDocument"
@@ -88,7 +88,7 @@ finerr() {
     
     log_error "Build failed. Retrieving logs..."
     
-    if wget -q "$log_url" -O "$log_file"; then
+    if curl -s -f -o "$log_file" "$log_url"; then
         log_info "Sending failure log to Telegram..."
         
         curl -F document=@"$log_file" "$BOT_DOC_URL" \
@@ -174,9 +174,9 @@ compile_kernel() {
         CROSS_COMPILE="$bin_dir/aarch64-linux-gnu-" \
         CROSS_COMPILE_ARM32="$bin_dir/arm-linux-gnueabi-" || finerr
     
-    # Verify output image
+    # Verify output Image.gz
     if [[ ! -f "$IMAGE" ]]; then
-        log_error "Image not found after compilation"
+        log_error "Image.gz not found after compilation"
         finerr
     fi
     
