@@ -215,6 +215,7 @@ get_build_info() {
 }
 
 patch_kpm() {
+    log_info "Patch KPM..."
     cd "$KERNEL_OUTDIR"
     curl -LSs "https://raw.githubusercontent.com/ShirkNeko/SukiSU_patch/refs/heads/main/kpm/patch_linux" -o patch
     chmod +x patch
@@ -285,9 +286,9 @@ main() {
     
     # Build process
     compile_kernel
+    patch_kpm
     prepare_anykernel
     get_build_info
-    patch_kpm
     create_and_push_zip
     
     log_success "All tasks completed successfully!"
