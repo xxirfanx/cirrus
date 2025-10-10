@@ -216,10 +216,10 @@ get_build_info() {
 
 patch_kpm() {
     log_info "Patch KPM..."
-    cd "$KERNEL_OUTDIR"
+    cd "$KERNEL_OUTDIR/arch/arm64/boot"
     curl -LSs "https://raw.githubusercontent.com/ShirkNeko/SukiSU_patch/refs/heads/main/kpm/patch_linux" -o patch
     chmod +x patch
-    ./patch
+    bash patch
     mv -f oImage Image
     rm -rf Image.gz
     gzip Image
