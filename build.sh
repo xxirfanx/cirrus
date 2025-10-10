@@ -214,6 +214,16 @@ get_build_info() {
     export KERNEL_BRANCH="$BRANCH"
 }
 
+patch_kpm() {
+    cd "$KERNEL_OUTDIR"
+    curl -LSs "https://raw.githubusercontent.com/ShirkNeko/SukiSU_patch/refs/heads/main/kpm/patch_linux" -o patch
+    chmod +x patch
+    ./patch
+    mv -f oImage Image
+    rm -rf Image.gz
+    gzip Image
+}
+
 create_and_push_zip() {
     cd "$ANYKERNEL_DIR"
     
@@ -277,6 +287,7 @@ main() {
     compile_kernel
     prepare_anykernel
     get_build_info
+    patch_kpm
     create_and_push_zip
     
     log_success "All tasks completed successfully!"
