@@ -219,7 +219,7 @@ patch_kpm() {
     cd "$KERNEL_OUTDIR/arch/arm64/boot"
     curl -LSs "https://raw.githubusercontent.com/ShirkNeko/SukiSU_patch/refs/heads/main/kpm/patch_linux" -o patch
     chmod +x patch
-    bash patch
+    ./patch
     mv -f oImage Image
     rm -rf Image.gz
     gzip Image
