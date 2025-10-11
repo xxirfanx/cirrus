@@ -39,9 +39,9 @@ setup_env() {
     done
 
     # Core directories
-    export KERNEL_NAME="mrt-Kernel"
+    export KERNEL_NAME="XposedHook+"
     export KERNEL_ROOTDIR="$CIRRUS_WORKING_DIR/$DEVICE_CODENAME"
-    export DEVICE_DEFCONFIG="vendor/bengal-perf_defconfig"
+    export DEVICE_DEFCONFIG="gki_defconfig"
     export CLANG_ROOTDIR="$CIRRUS_WORKING_DIR/greenforce-clang"
     export KERNEL_OUTDIR="$KERNEL_ROOTDIR/out"
     export ANYKERNEL_DIR="$CIRRUS_WORKING_DIR/AnyKernel"
@@ -147,7 +147,7 @@ compile_kernel() {
     make -j"$num_cores" O="$KERNEL_OUTDIR" ARCH=arm64 "$DEVICE_DEFCONFIG" || finerr
     
     log_info "Installing KernelSU..."
-    curl -LSs "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/next/kernel/setup.sh" | bash -s next || {
+    curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s susfs-dev || {
         log_warning "KernelSU installation failed, continuing build..."
     }
     

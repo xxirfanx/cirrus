@@ -1,15 +1,12 @@
 env:
-  TZ: Asia/Jakarta
-  DEVICE_CODENAME: lime
+  TZ: Asia/Hong_Kong
+  DEVICE_CODENAME: sky
   BUILD_USER: admin
-  BUILD_HOST: mrtproject
-  KERNEL_SOURCE: ENCRYPTED[d931747c174783fee8805a095cab47d33346707e4a990dbe5d6fbf8fa40a270823d8321c30b33a0cf34b8e401dedb85a]
-  KERNEL_BRANCH: 13.0.0-perf
+  BUILD_HOST: XposeeHook
+  KERNEL_BRANCH: mahiru-5-rose_r1
   CIRRUS_CLONE_DEPTH: 1
   CIRRUS_WORKING_DIR: /tmp/cirrus-ci-build
-  ANYKERNEL: https://github.com/greenforce-project/AnyKernel3
-  TG_TOKEN: ENCRYPTED[d0276edb784fa8b652def34d72880b4851940c542e7359f5f4bf2fd580c50a2703fd253d507dbae7707b26f9c97a6062]
-  TG_CHAT_ID: ENCRYPTED[4d5930d962ad8511a049ebea4a7592106705ad09d8471be9b3071ee337381d2f31c1a9a53040eeb582842361f6ec1417]
+  ANYKERNEL: https://github.com/xxirfanx/AnyKernel3
 
 task:
   name: "Kernel Build.."
