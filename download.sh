@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-apt-get install aria2c -Y
+apt-get install aria2 -Y
 echo "Downloading Kernel Sources.."
 git clone --depth 1 --recurse-submodules $KERNEL_SOURCE -b $KERNEL_BRANCH $CIRRUS_WORKING_DIR/$DEVICE_CODENAME
 echo ""
