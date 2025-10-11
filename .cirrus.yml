@@ -3,7 +3,7 @@ env:
   DEVICE_CODENAME: sky
   BUILD_USER: admin
   BUILD_HOST: XposedHook
-  KERNEL_SOURCE: ENCRYPTED[!da82a63b232b5368f478aedb97d7ee9eda7b08275ddc22733f25fb907b8689f2d5cdcc7cfd916a93baa10edda5399a28!]
+  KERNEL_SOURCE: android_kernel_common_android12
   KERNEL_BRANCH: mahiru-5-rose_r1
   CIRRUS_CLONE_DEPTH: 1
   CIRRUS_WORKING_DIR: /tmp/cirrus-ci-build
