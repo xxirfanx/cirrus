@@ -42,7 +42,9 @@ setup_env() {
     export KERNEL_NAME="XposedHook+"
     export KERNEL_ROOTDIR="$CIRRUS_WORKING_DIR/$DEVICE_CODENAME"
     export DEVICE_DEFCONFIG="gki_defconfig"
-    export CLANG_ROOTDIR="$CIRRUS_WORKING_DIR/greenforce-clang"
+    export CLANG_ROOTDIR="$CIRRUS_WORKING_DIR/clang"
+    export PATH="$CIRRUS_WORKING_DIR/clang/bin:$PATH"
+    export LD_LIBRARY_PATH="$CIRRUS_WORKING_DIR/clang/lib"
     export KERNEL_OUTDIR="$KERNEL_ROOTDIR/out"
     export ANYKERNEL_DIR="$CIRRUS_WORKING_DIR/AnyKernel"
 
@@ -158,22 +160,23 @@ compile_kernel() {
     export LLVM_IAS=1
     
     make -j"$num_cores" ARCH=arm64 O="$KERNEL_OUTDIR" \
-        CC="$bin_dir/clang" \
-        AR="$bin_dir/llvm-ar" \
-        AS="$bin_dir/llvm-as" \
-        LD="$bin_dir/ld.lld" \
-        NM="$bin_dir/llvm-nm" \
-        OBJCOPY="$bin_dir/llvm-objcopy" \
-        OBJDUMP="$bin_dir/llvm-objdump" \
-        OBJSIZE="$bin_dir/llvm-size" \
-        READELF="$bin_dir/llvm-readelf" \
-        STRIP="$bin_dir/llvm-strip" \
-        HOSTCC="$bin_dir/clang" \
-        HOSTCXX="$bin_dir/clang++" \
-        HOSTLD="$bin_dir/ld.lld" \
-        CROSS_COMPILE="$bin_dir/aarch64-linux-gnu-" \
-        CROSS_COMPILE_ARM32="$bin_dir/arm-linux-gnueabi-" || finerr
-    
+        CC="clang" \
+        AR="llvm-ar" \
+        AS="llvm-as" \
+        LD="ld.lld" \
+        NM="llvm-nm" \
+        OBJCOPY="llvm-objcopy" \
+        OBJDUMP="llvm-objdump" \
+        OBJSIZE="llvm-size" \
+        READELF="llvm-readelf" \
+        STRIP="llvm-strip" \
+        HOSTCC="clang" \
+        HOSTCXX="clang++" \
+        HOSTLD="ld.lld" \
+        CROSS_COMPILE="aarch64-linux-gnu-" \
+        CROSS_COMPILE_ARM32="arm-linux-gnueabi-" \
+        CLANG_TRIPLE="aarch64-linux-gnu-" || finerr
+
     # Verify output Image.gz
     if [[ ! -f "$IMAGE" ]]; then
         log_error "Image.gz not found after compilation"
