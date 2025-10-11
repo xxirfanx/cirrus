@@ -149,7 +149,7 @@ compile_kernel() {
     make -j"$num_cores" O="$KERNEL_OUTDIR" ARCH=arm64 "$DEVICE_DEFCONFIG" || finerr
     
     log_info "Installing KernelSU..."
-    curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s susfs-dev || {
+    curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s susfs-main || {
         log_warning "KernelSU installation failed, continuing build..."
     }
     
