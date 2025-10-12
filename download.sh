@@ -81,9 +81,9 @@ case "$USE_CLANG" in
         ;;
         
     "zyc-19")
-        echo "🌿 Using Greenforce Clang toolchain..."
+        echo "🌿 Using zyc-19 Clang toolchain..."
         download_with_retry \
-            "mkdir zyc-19 ; cd zyc-19 ; wget https://github.com/ZyCromerZ/Clang/releases/download/19.0.0git-20240125-release/Clang-19.0.0git-20240125.tar.gz" \
+            "https://github.com/ZyCromerZ/Clang/releases/download/19.0.0git-20240125-release/Clang-19.0.0git-20240125.tar.gz" \
             "zyc-19-clang.tar.gz"
         
         echo "📁 Extracting Greenforce toolchain..."
