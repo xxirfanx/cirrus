@@ -64,13 +64,9 @@ setup_env() {
     export CLANG_ROOTDIR="$CIRRUS_WORKING_DIR/clang"
     export KERNEL_OUTDIR="$KERNEL_ROOTDIR/out"
     export ANYKERNEL_DIR="$CIRRUS_WORKING_DIR/AnyKernel"
-    export CCACHE_DIR="${CCACHE_DIR:-/tmp/ccache}"
-
-    # Create necessary directories
-    mkdir -p "$KERNEL_OUTDIR" "$ANYKERNEL_DIR" "$CCACHE_DIR"
 
     # PATH setup
-    export PATH="$CLANG_ROOTDIR/bin:$PATH:/usr/lib/ccache"
+    export PATH="$CLANG_ROOTDIR/bin:$PATH"
     export LD_LIBRARY_PATH="$CLANG_ROOTDIR/lib:$LD_LIBRARY_PATH"
 
     # Toolchain validation
@@ -99,13 +95,6 @@ setup_env() {
     # Build optimization
     export NUM_CORES=$(nproc)
     export BUILD_OPTIONS="${BUILD_OPTIONS:--j$NUM_CORES}"
-    
-    # CCache configuration
-    if [[ "$CCACHE" == "true" ]]; then
-        export CCACHE_DIR
-        export CCACHE_MAXSIZE="${CCACHE_MAXSIZE:-2G}"
-        log_info "CCache enabled: $CCACHE_DIR (max: $CCACHE_MAXSIZE)"
-    fi
 }
 
 tg_post_msg() {
@@ -226,12 +215,20 @@ compile_kernel() {
     cd "$KERNEL_ROOTDIR"
     
     local bin_dir="$CLANG_ROOTDIR/bin"
+
+    local build_cmd=(
+        $BUILD_OPTIONS
+        ARCH=arm64
+        O="$KERNEL_OUTDIR"
+        LLVM=1
+        LLVM_IAS=1
+        CROSS_COMPILE="aarch64-linux-gnu-"
+    )
     
     tg_post_msg "🚀 <b>Kernel Build Started</b>%0A📱 <b>Device:</b> <code>$DEVICE_CODENAME</code>%0A⚙️ <b>Defconfig:</b> <code>$DEVICE_DEFCONFIG</code>%0A🔧 <b>Toolchain:</b> <code>$KBUILD_COMPILER_STRING</code>"
     
     log_info "Step 1/4: Configuring defconfig..."
-    make O="$KERNEL_OUTDIR" ARCH=arm64 "$DEVICE_DEFCONFIG" || {
-    make ARCH=arm64 LLVM=1 LLVM_IAS=1 O="$KERNEL_OUTDIR" CROSS_COMPILE=aarch64-linux-gnu- "$DEVICE_DEFCONFIG"
+    make "${build_cmd[@]}" "$DEVICE_DEFCONFIG" || {
         log_error "Defconfig configuration failed"
         return 1
     }
@@ -239,47 +236,11 @@ compile_kernel() {
     log_info "Step 2/4: Installing KernelSU..."
     install_kernelsu
     
-    log_info "Step 3/4: Starting kernel compilation..."
-    
-    # Optimized build flags
-    export LLVM=1
-    export LLVM_IAS=1
-    
-    # Use CCache if enabled
-    if [[ "$CCACHE" == "true" ]]; then
-        export CC="ccache clang"
-        log_info "CCache statistics before build:"
-        ccache -s
-    else
-        export CC="clang"
-    fi
-    
-    local build_cmd=(
-        make $BUILD_OPTIONS
-        ARCH=arm64
-        O="$KERNEL_OUTDIR"
-        CC="$CC"
-        AR="llvm-ar"
-        AS="llvm-as"
-        LD="ld.lld"
-        NM="llvm-nm"
-        OBJCOPY="llvm-objcopy"
-        OBJDUMP="llvm-objdump"
-        OBJSIZE="llvm-size"
-        READELF="llvm-readelf"
-        STRIP="llvm-strip"
-        HOSTCC="clang"
-        HOSTCXX="clang++"
-        HOSTLD="ld.lld"
-        CROSS_COMPILE="aarch64-linux-gnu-"
-        CROSS_COMPILE_ARM32="arm-linux-gnueabi-"
-        CLANG_TRIPLE="aarch64-linux-gnu-"
-    )
-    
+    log_info "Step 3/4: Starting kernel compilation..."  
     log_debug "Build command: ${build_cmd[*]}"
     
     # Execute build
-    if "${build_cmd[@]}"; then
+    if make "${build_cmd[@]}"; then
         log_success "Kernel compilation completed"
     else
         log_error "Kernel compilation failed"
@@ -293,12 +254,6 @@ compile_kernel() {
     fi
     
     log_info "Step 4/4: Build verification completed"
-    
-    # Show CCache statistics if enabled
-    if [[ "$CCACHE" == "true" ]]; then
-        log_info "CCache statistics after build:"
-        ccache -s
-    fi
 }
 
 prepare_anykernel() {
