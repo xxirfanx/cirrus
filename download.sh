@@ -79,9 +79,23 @@ case "$USE_CLANG" in
             handle_error "Failed to extract Greenforce toolchain"
         fi
         ;;
-    
+        
+    "zyc-19")
+        echo "🌿 Using Greenforce Clang toolchain..."
+        download_with_retry \
+            "mkdir zyc-19 ; cd zyc-19 ; wget https://github.com/ZyCromerZ/Clang/releases/download/19.0.0git-20240125-release/Clang-19.0.0git-20240125.tar.gz" \
+            "zyc-19-clang.tar.gz"
+        
+        echo "📁 Extracting Greenforce toolchain..."
+        if tar -xf "zyc-19-clang.tar.gz" -C "$CIRRUS_WORKING_DIR/clang" --strip-components=1; then
+            rm -f "zyc-19-clang.tar.gz"
+            echo "✅ zyc-19 toolchain extracted successfully"
+        else
+            handle_error "Failed to extract Greenforce toolchain"
+        fi
+        ;;
     *)
-        handle_error "Invalid USE_CLANG value: '$USE_CLANG'. Must be 'aosp' or 'greenforce'"
+        handle_error "Invalid USE_CLANG value: '$USE_CLANG'. Must be 'aosp' or 'greenforce' or 'zyc-19''"
         ;;
 esac
 
