@@ -99,6 +99,13 @@ case "$USE_CLANG" in
         ;;
 esac
 
+if [[ $(find "$CIRRUS_WORKING_DIR/clang" -mindepth 1 -maxdepth 1 -type d | wc -l) -eq 1 ]] \
+    && [[ $(find "$CIRRUS_WORKING_DIR/clang" -mindepth 1 -maxdepth 1 -type f | wc -l) -eq 0 ]]; then
+    SINGLE_DIR=$(find "$CIRRUS_WORKING_DIR/clang" -mindepth 1 -maxdepth 1 -type d)
+    mv $SINGLE_DIR/* $CIRRUS_WORKING_DIR/clang
+    rm -rf $SINGLE_DIR
+fi
+
 # Verify toolchain installation
 echo ""
 echo "🔍 Verifying toolchain installation..."
