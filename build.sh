@@ -3,19 +3,19 @@
 # Constants
 WORKDIR="$(pwd)"
 RELEASE="v0.1"
-KERNEL_NAME="QuartiX"
-USER="eraselk"
-HOST="gacorprjkt"
-TIMEZONE="Asia/Makassar"
-ANYKERNEL_REPO="https://github.com/linastorvaldz/anykernel"
-ANYKERNEL_BRANCH="android15-6.6"
-KERNEL_REPO="https://github.com/linastorvaldz/kernel_common"
-KERNEL_BRANCH="android15-6.6-2024-08"
-KERNEL_DEFCONFIG="quartix_defconfig"
-GKI_RELEASES_REPO="https://github.com/linastorvaldz/quartix-releases"
+KERNEL_NAME="XposedHook"
+USER="admin"
+HOST="XposedHook"
+TIMEZONE="Asia/Hong_Kong"
+ANYKERNEL_REPO="https://github.com/xxirfanx/anykernel"
+ANYKERNEL_BRANCH="gki-2.0"
+KERNEL_REPO="https://github.com/xxirfanx/android_kernel_common_android12-5.10"
+KERNEL_BRANCH="mahiru-5-rose_r1"
+KERNEL_DEFCONFIG="gki_defconfig"
+GKI_RELEASES_REPO="https://github.com/xxirfanx/suki_su"
 CLANG_URL="https://github.com/linastorvaldz/idk/releases/download/clang-r547379/clang.tgz"
 CLANG_BRANCH=""
-AK3_ZIP_NAME="AK3-$KERNEL_NAME-REL-KVER-VARIANT-BUILD_DATE.zip"
+AK3_ZIP_NAME="android12-5.10.X-lts-AnyKernel3.zip"
 OUTDIR="$WORKDIR/out"
 KSRC="$WORKDIR/ksrc"
 
@@ -145,11 +145,11 @@ if susfs_included; then
   log "Applying kernel-side susfs patches"
   SUSFS_DIR="$WORKDIR/susfs"
   SUSFS_PATCHES="${SUSFS_DIR}/kernel_patches"
-  SUSFS_BRANCH=gki-android15-6.6
+  SUSFS_BRANCH=gki-android12-5.10
   git clone --depth=1 -q https://gitlab.com/simonpunk/susfs4ksu -b $SUSFS_BRANCH $SUSFS_DIR
   cp -R $SUSFS_PATCHES/fs/* ./fs
   cp -R $SUSFS_PATCHES/include/* ./include
-  patch -p1 < $WORKDIR/kernel-patches//50_add_susfs_in_gki-android15-6.6.patch
+  patch -p1 < $WORKDIR/kernel-patches//50_add_susfs_in_gki-android12-5.10.patch
   SUSFS_VERSION=$(grep -E '^#define SUSFS_VERSION' ./include/linux/susfs.h | cut -d' ' -f3 | sed 's/"//g')
 
   # KernelSU-side
@@ -304,7 +304,7 @@ fi
 if [[ $LAST_BUILD == "true" && $STATUS != "BETA" ]]; then
   (
     echo "LINUX_VERSION=$LINUX_VERSION"
-    echo "SUSFS_VERSION=$(curl -s https://gitlab.com/simonpunk/susfs4ksu/raw/gki-android15-6.6/kernel_patches/include/linux/susfs.h | grep -E '^#define SUSFS_VERSION' | cut -d' ' -f3 | sed 's/"//g')"
+    echo "SUSFS_VERSION=$(curl -s https://gitlab.com/simonpunk/susfs4ksu/raw/gki-android12-5.10/kernel_patches/include/linux/susfs.h | grep -E '^#define SUSFS_VERSION' | cut -d' ' -f3 | sed 's/"//g')"
     echo "KERNEL_NAME=$KERNEL_NAME"
     echo "RELEASE_REPO=$(simplify_gh_url "$GKI_RELEASES_REPO")"
   ) >> $WORKDIR/artifacts/info.txt
