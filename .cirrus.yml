@@ -13,7 +13,7 @@ env:
   TG_CHAT_ID: ENCRYPTED[!693f768ca576838abbb036f8efd169321f2a7f8c2d10a43ecfd74048c66b538a8eda467cf205630b31e60b7023a224bd!]
 
   # Toolchain selection: "aosp" or "greenforce"
-  USE_CLANG: "aosp"
+  USE_CLANG: "greenforce"
   
   # Kernel SU configuration
   KERNELSU: true
