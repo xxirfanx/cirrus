@@ -225,26 +225,15 @@ install_kernelsu() {
 
 compile_kernel() {
     cd "$KERNEL_ROOTDIR"
-    
+
     local bin_dir="$CLANG_ROOTDIR/bin"
-    
+
     tg_post_msg "🚀 <b>Kernel Build Started</b>%0A📱 <b>Device:</b> <code>$DEVICE_CODENAME</code>%0A⚙️ <b>Defconfig:</b> <code>$DEVICE_DEFCONFIG</code>%0A🔧 <b>Toolchain:</b> <code>$KBUILD_COMPILER_STRING</code>"
-    
-    log_info "Step 1/4: Configuring defconfig..."
-    make O="$KERNEL_OUTDIR" ARCH=arm64 "$DEVICE_DEFCONFIG" || {
-        log_error "Defconfig configuration failed"
-        return 1
-    }
-    
-    log_info "Step 2/4: Installing KernelSU..."
-    install_kernelsu
-    
-    log_info "Step 3/4: Starting kernel compilation..."
-    
+
     # Optimized build flags
     export LLVM=1
     export LLVM_IAS=1
-    
+
     # Use CCache if enabled
     if [[ "$CCACHE" == "true" ]]; then
         export CC="ccache clang"
@@ -254,38 +243,40 @@ compile_kernel() {
         export CC="clang"
     fi
     
+    MAKE_ARGS=( 
+        O="$KERNEL_OUTDIR"
+        ARCH="arm64"
+        CC="$CC"
+        CROSS_COMPILE="aarch64-linux-gnu-"
+        CROSS_COMPILE_ARM32="arm-linux-gnueabi-"
+        CLANG_TRIPLE="aarch64-linux-gnu-"
+    )
+
+    log_info "Step 1/4: Configuring defconfig..."
+    make "${MAKE_ARGS[@]}" "$DEVICE_DEFCONFIG" || {
+        log_error "Defconfig configuration failed"
+        return 1
+    }
+
+    log_info "Step 2/4: Installing KernelSU..."
+    install_kernelsu
+
+    log_info "Step 3/4: Starting kernel compilation..."
+
     local build_targets=("Image.gz-dtb")
     [[ "$BUILD_DTBO" == "true" ]] && build_targets+=("dtbo.img")
-    
+
     # Execute build with optimized parameters
-    if make $BUILD_OPTIONS \
-        ARCH=arm64 \
-        O="$KERNEL_OUTDIR" \
-        CC="$CC" \
-        AR="llvm-ar" \
-        NM="llvm-nm" \
-        STRIP="llvm-strip" \
-        OBJCOPY="llvm-objcopy" \
-        OBJDUMP="llvm-objdump" \
-        OBJSIZE="llvm-size" \
-        READELF="llvm-readelf" \
-        HOSTCC="clang" \
-        HOSTCXX="clang++" \
-        HOSTAR="llvm-ar" \
-        HOSTLD="ld.lld" \
-        CROSS_COMPILE="aarch64-linux-gnu-" \
-        CROSS_COMPILE_ARM32="arm-linux-gnueabi-" \
-        CLANG_TRIPLE="aarch64-linux-gnu-" \
-        "${build_targets[@]}"; then
-        
+    if make "$BUILD_OPTIONS" "${MAKE_ARGS[@]}" "${build_targets[@]}"; then
+
         log_success "Kernel compilation completed"
     else
         log_error "Kernel compilation failed"
         return 1
     fi
-    
+
     log_debug "Build command: ${build_cmd[*]}"
-    
+
     # Execute build
     if "${build_cmd[@]}"; then
         log_success "Kernel compilation completed"
@@ -293,15 +284,15 @@ compile_kernel() {
         log_error "Kernel compilation failed"
         return 1
     fi
-    
+
     # Verify output Image.gz
     if [[ ! -f "$IMAGE" ]]; then
         log_error "Image.gz not found at expected location: $IMAGE"
         return 1
     fi
-    
+
     log_info "Step 4/4: Build verification completed"
-    
+
     # Show CCache statistics if enabled
     if [[ "$CCACHE" == "true" ]]; then
         log_info "CCache statistics after build:"
