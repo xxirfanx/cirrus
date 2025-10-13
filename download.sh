@@ -79,32 +79,11 @@ case "$USE_CLANG" in
             handle_error "Failed to extract Greenforce toolchain"
         fi
         ;;
-        
-    "zyc-19")
-        echo "🌿 Using zyc-19 Clang toolchain..."
-        download_with_retry \
-            "https://github.com/ZyCromerZ/Clang/releases/download/19.0.0git-20240125-release/Clang-19.0.0git-20240125.tar.gz" \
-            "zyc-19-clang.tar.gz"
-        
-        echo "📁 Extracting Greenforce toolchain..."
-        if tar -xf "zyc-19-clang.tar.gz" -C "$CIRRUS_WORKING_DIR/clang" --strip-components=1; then
-            rm -f "zyc-19-clang.tar.gz"
-            echo "✅ zyc-19 toolchain extracted successfully"
-        else
-            handle_error "Failed to extract Greenforce toolchain"
-        fi
-        ;;
+    
     *)
-        handle_error "Invalid USE_CLANG value: '$USE_CLANG'. Must be 'aosp' or 'greenforce' or 'zyc-19''"
+        handle_error "Invalid USE_CLANG value: '$USE_CLANG'. Must be 'aosp' or 'greenforce'"
         ;;
 esac
-
-if [[ $(find "$CIRRUS_WORKING_DIR/clang" -mindepth 1 -maxdepth 1 -type d | wc -l) -eq 1 ]] \
-    && [[ $(find "$CIRRUS_WORKING_DIR/clang" -mindepth 1 -maxdepth 1 -type f | wc -l) -eq 0 ]]; then
-    SINGLE_DIR=$(find "$CIRRUS_WORKING_DIR/clang" -mindepth 1 -maxdepth 1 -type d)
-    mv $SINGLE_DIR/* $CIRRUS_WORKING_DIR/clang
-    rm -rf $SINGLE_DIR
-fi
 
 # Verify toolchain installation
 echo ""

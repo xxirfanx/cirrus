@@ -22,7 +22,7 @@ log_error() { echo -e "${RED}[ERROR]${NC} $1" >&2; }
 log_debug() { echo -e "${CYAN}[DEBUG]${NC} $1"; }
 
 # Global variables
-declare -g KERNEL_NAME="xposedhook"
+declare -g KERNEL_NAME="XposedHook"
 declare -g START_TIME
 declare -g BUILD_STATUS="failed"
 
@@ -64,9 +64,13 @@ setup_env() {
     export CLANG_ROOTDIR="$CIRRUS_WORKING_DIR/clang"
     export KERNEL_OUTDIR="$KERNEL_ROOTDIR/out"
     export ANYKERNEL_DIR="$CIRRUS_WORKING_DIR/AnyKernel"
+    export CCACHE_DIR="${CCACHE_DIR:-/tmp/ccache}"
+
+    # Create necessary directories
+    mkdir -p "$KERNEL_OUTDIR" "$ANYKERNEL_DIR" "$CCACHE_DIR"
 
     # PATH setup
-    export PATH="$CLANG_ROOTDIR/bin:$PATH"
+    export PATH="$CLANG_ROOTDIR/bin:$PATH:/usr/lib/ccache"
     export LD_LIBRARY_PATH="$CLANG_ROOTDIR/lib:$LD_LIBRARY_PATH"
 
     # Toolchain validation
@@ -86,7 +90,8 @@ setup_env() {
     export KBUILD_COMPILER_STRING="$CLANG_VER with $LLD_VER"
 
     # Build variables
-    export IMAGE="$KERNEL_OUTDIR/arch/arm64/boot/Image.gz"
+    export IMAGE="$KERNEL_OUTDIR/arch/arm64/boot/Image.gz-dtb"
+    export DTBO="$KERNEL_OUTDIR/arch/arm64/boot/dtbo.img"
     export DATE=$(date +"%Y%m%d-%H%M%S")
     export BOT_MSG_URL="https://api.telegram.org/bot$TG_TOKEN/sendMessage"
     export BOT_DOC_URL="https://api.telegram.org/bot$TG_TOKEN/sendDocument"
@@ -95,6 +100,13 @@ setup_env() {
     # Build optimization
     export NUM_CORES=$(nproc)
     export BUILD_OPTIONS="${BUILD_OPTIONS:--j$NUM_CORES}"
+    
+    # CCache configuration
+    if [[ "$CCACHE" == "true" ]]; then
+        export CCACHE_DIR
+        export CCACHE_MAXSIZE="${CCACHE_MAXSIZE:-2G}"
+        log_info "CCache enabled: $CCACHE_DIR (max: $CCACHE_MAXSIZE)"
+    fi
 }
 
 tg_post_msg() {
@@ -215,20 +227,11 @@ compile_kernel() {
     cd "$KERNEL_ROOTDIR"
     
     local bin_dir="$CLANG_ROOTDIR/bin"
-
-    local build_cmd=(
-        $BUILD_OPTIONS
-        ARCH=arm64
-        O="$KERNEL_OUTDIR"
-        LLVM=1
-        LLVM_IAS=1
-        CROSS_COMPILE="aarch64-linux-gnu-"
-    )
     
     tg_post_msg "🚀 <b>Kernel Build Started</b>%0A📱 <b>Device:</b> <code>$DEVICE_CODENAME</code>%0A⚙️ <b>Defconfig:</b> <code>$DEVICE_DEFCONFIG</code>%0A🔧 <b>Toolchain:</b> <code>$KBUILD_COMPILER_STRING</code>"
     
     log_info "Step 1/4: Configuring defconfig..."
-    make "${build_cmd[@]}" "$DEVICE_DEFCONFIG" || {
+    make O="$KERNEL_OUTDIR" ARCH=arm64 "$DEVICE_DEFCONFIG" || {
         log_error "Defconfig configuration failed"
         return 1
     }
@@ -236,11 +239,55 @@ compile_kernel() {
     log_info "Step 2/4: Installing KernelSU..."
     install_kernelsu
     
-    log_info "Step 3/4: Starting kernel compilation..."  
+    log_info "Step 3/4: Starting kernel compilation..."
+    
+    # Optimized build flags
+    export LLVM=1
+    export LLVM_IAS=1
+    
+    # Use CCache if enabled
+    if [[ "$CCACHE" == "true" ]]; then
+        export CC="ccache clang"
+        log_info "CCache statistics before build:"
+        ccache -s
+    else
+        export CC="clang"
+    fi
+    
+    local build_targets=("Image.gz-dtb")
+    [[ "$BUILD_DTBO" == "true" ]] && build_targets+=("dtbo.img")
+    
+    # Execute build with optimized parameters
+    if make $BUILD_OPTIONS \
+        ARCH=arm64 \
+        O="$KERNEL_OUTDIR" \
+        CC="$CC" \
+        AR="llvm-ar" \
+        NM="llvm-nm" \
+        STRIP="llvm-strip" \
+        OBJCOPY="llvm-objcopy" \
+        OBJDUMP="llvm-objdump" \
+        OBJSIZE="llvm-size" \
+        READELF="llvm-readelf" \
+        HOSTCC="clang" \
+        HOSTCXX="clang++" \
+        HOSTAR="llvm-ar" \
+        HOSTLD="ld.lld" \
+        CROSS_COMPILE="aarch64-linux-gnu-" \
+        CROSS_COMPILE_ARM32="arm-linux-gnueabi-" \
+        CLANG_TRIPLE="aarch64-linux-gnu-" \
+        "${build_targets[@]}"; then
+        
+        log_success "Kernel compilation completed"
+    else
+        log_error "Kernel compilation failed"
+        return 1
+    fi
+    
     log_debug "Build command: ${build_cmd[*]}"
     
     # Execute build
-    if make "${build_cmd[@]}"; then
+    if "${build_cmd[@]}"; then
         log_success "Kernel compilation completed"
     else
         log_error "Kernel compilation failed"
@@ -254,6 +301,12 @@ compile_kernel() {
     fi
     
     log_info "Step 4/4: Build verification completed"
+    
+    # Show CCache statistics if enabled
+    if [[ "$CCACHE" == "true" ]]; then
+        log_info "CCache statistics after build:"
+        ccache -s
+    fi
 }
 
 prepare_anykernel() {
@@ -263,11 +316,20 @@ prepare_anykernel() {
     
     if git clone --depth=1 --single-branch "$ANYKERNEL" "$ANYKERNEL_DIR"; then
         # Copy kernel image
-        if cp -f "$IMAGE" "$ANYKERNEL_DIR"; then
-            log_success "AnyKernel preparation completed"
+        if [ "$BUILD_DTBO" = "true" ]; then
+            if cp -f "$IMAGE" "$DTBO" "$ANYKERNEL_DIR"; then
+                log_success "AnyKernel preparation completed"
+            else
+                log_error "Failed to copy kernel image to AnyKernel"
+                return 1
+            fi
         else
-            log_error "Failed to copy kernel image to AnyKernel"
-            return 1
+            if cp -f "$IMAGE" "$ANYKERNEL_DIR"; then
+                log_success "AnyKernel preparation completed"
+            else
+                log_error "Failed to copy kernel image to AnyKernel"
+                return 1
+            fi
         fi
     else
         log_error "Failed to clone AnyKernel repository"
@@ -303,7 +365,7 @@ create_and_push_zip() {
     
     log_info "Creating flashable ZIP: $zip_name"
     
-    if zip -r9 "$zip_name" . -x "*.git*" "README.md" ".github/*"; then
+    if zip -r9 "$zip_name" *; then
         log_success "ZIP creation completed"
     else
         log_error "ZIP creation failed"
