@@ -91,7 +91,6 @@ setup_env() {
 
     # Build variables
     export IMAGE="$KERNEL_OUTDIR/arch/arm64/boot/Image"
-    export DTBO="$KERNEL_OUTDIR/arch/arm64/boot/dtbo.img"
     export DATE=$(date +"%Y%m%d-%H%M%S")
     export BOT_MSG_URL="https://api.telegram.org/bot$TG_TOKEN/sendMessage"
     export BOT_DOC_URL="https://api.telegram.org/bot$TG_TOKEN/sendDocument"
@@ -263,8 +262,7 @@ compile_kernel() {
 
     log_info "Step 3/4: Starting kernel compilation..."
 
-    local build_targets=("Image.gz-dtb")
-    [[ "$BUILD_DTBO" == "true" ]] && build_targets+=("dtbo.img")
+    local build_targets=("Image.gz")
 
     # Execute build with optimized parameters
     if make "$BUILD_OPTIONS" "${MAKE_ARGS[@]}" "${build_targets[@]}"; then
