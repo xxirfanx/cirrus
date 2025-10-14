@@ -252,7 +252,8 @@ compile_kernel() {
     )
 
 
-    log_info "Step 1/4: Installing KernelSU..."             install_kernelsu
+    log_info "Step 1/4: Installing KernelSU..."
+    install_kernelsu
 
     log_info "Step 2/4: Configuring defconfig..."
     make "${MAKE_ARGS[@]}" "$DEVICE_DEFCONFIG" || {
