@@ -90,7 +90,7 @@ setup_env() {
     export KBUILD_COMPILER_STRING="$CLANG_VER with $LLD_VER"
 
     # Build variables
-    export IMAGE="$KERNEL_OUTDIR/arch/arm64/boot/Image"
+    export IMAGE="$KERNEL_OUTDIR/arch/arm64/boot/$TYPE_IMAGE"
     export DATE=$(date +"%Y%m%d-%H%M%S")
     export BOT_MSG_URL="https://api.telegram.org/bot$TG_TOKEN/sendMessage"
     export BOT_DOC_URL="https://api.telegram.org/bot$TG_TOKEN/sendDocument"
@@ -263,7 +263,7 @@ compile_kernel() {
 
     log_info "Step 3/4: Starting kernel compilation..."
 
-    local build_targets=("Image.gz")
+    local build_targets=("$TYPE_IMAGE")
 
     # Execute build with optimized parameters
     if make "$BUILD_OPTIONS" "${MAKE_ARGS[@]}" "${build_targets[@]}"; then
@@ -286,7 +286,7 @@ compile_kernel() {
 
     # Verify output Image.gz
     if [[ ! -f "$IMAGE" ]]; then
-        log_error "Image not found at expected location: $IMAGE"
+        log_error "Kernel Image not found at expected location: $IMAGE"
         return 1
     fi
 

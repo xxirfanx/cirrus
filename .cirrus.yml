@@ -12,6 +12,9 @@ env:
   TG_TOKEN: ENCRYPTED[!9edcd3081be002db985bb813ca9d803aef002564bcca2a513a4b35e96374c1c5dd11ba6fb118abf024f61db4babc334a!]
   TG_CHAT_ID: ENCRYPTED[!693f768ca576838abbb036f8efd169321f2a7f8c2d10a43ecfd74048c66b538a8eda467cf205630b31e60b7023a224bd!]
 
+  # build type kernel Image
+  TYPE_IMAGE: Image.gz
+
   # Build dtbo.img
   BUILD_DTBO: false
 
