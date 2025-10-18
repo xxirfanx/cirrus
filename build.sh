@@ -261,6 +261,12 @@ compile_kernel() {
     export LLVM=1
     export LLVM_IAS=1
 
+    # Use CCache if enabled
+    if [[ "$CCACHE" == "true" ]]; then                                  export CC="ccache clang" # Use ccache wrapper
+        log_info "CCache statistics before build:"
+        ccache -s                                                   else
+        export CC="clang"                                           fi
+
     log_info "Step 1/4: Configuring defconfig..."
     # Clean output directory config before creating new one
     rm -f "$KERNEL_OUTDIR/.config"
@@ -273,15 +279,6 @@ compile_kernel() {
     install_kernelsu
     
     log_info "Step 3/4: Starting kernel compilation... ($BUILD_OPTIONS)"
-    
-    # Use CCache if enabled
-    if [[ "$CCACHE" == "true" ]]; then
-        export CC="ccache clang" # Use ccache wrapper
-        log_info "CCache statistics before build:"
-        ccache -s
-    else
-        export CC="clang"
-    fi
     
     local build_targets=("$TYPE_IMAGE")
     [[ "$BUILD_DTBO" == "true" ]] && build_targets+=("dtbo.img")
