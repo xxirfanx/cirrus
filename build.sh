@@ -286,14 +286,12 @@ compile_kernel() {
     [[ "$BUILD_DTBO" == "true" ]] && build_targets+=("dtbo.img")
     
     # Execute the single, correct build command
-    if make $BUILD_OPTIONS \
         ARCH=arm64 \
         O="$KERNEL_OUTDIR" \
         CC="$CC" \
         CROSS_COMPILE="aarch64-linux-gnu-" \
         CROSS_COMPILE_ARM32="arm-linux-gnueabi-" \
         CLANG_TRIPLE="aarch64-linux-gnu-" \
-        "${build_targets[@]}"; then
         
         log_success "Kernel compilation completed"
     else
