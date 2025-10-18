@@ -259,7 +259,7 @@ compile_kernel() {
     log_info "Step 1/4: Configuring defconfig..."
     # Clean output directory config before creating new one
     rm -f "$KERNEL_OUTDIR/.config"
-    make O="$KERNEL_OUTDIR" ARCH=arm64 "$DEVICE_DEFCONFIG" || {
+    make O="$KERNEL_OUTDIR" ARCH=arm64 CC="$CC" CROSS_COMPILE="aarch64-linux-gnu-" CLANG_TRIPLE="aarch64-linux-gnu-" "$DEVICE_DEFCONFIG" || {
         log_error "Defconfig configuration failed"
         return 1
     }
@@ -286,12 +286,14 @@ compile_kernel() {
     [[ "$BUILD_DTBO" == "true" ]] && build_targets+=("dtbo.img")
     
     # Execute the single, correct build command
+       if make $BUILD_OPTIONS \
         ARCH=arm64 \
         O="$KERNEL_OUTDIR" \
         CC="$CC" \
         CROSS_COMPILE="aarch64-linux-gnu-" \
         CROSS_COMPILE_ARM32="arm-linux-gnueabi-" \
         CLANG_TRIPLE="aarch64-linux-gnu-" \
+	"${build_targets[@]}"; then
         
         log_success "Kernel compilation completed"
     else
