@@ -257,6 +257,10 @@ compile_kernel() {
     
     tg_post_msg "🚀 <b>Kernel Build Started</b>%0A📱 <b>Device:</b> <code>$DEVICE_CODENAME</code>%0A⚙️ <b>Defconfig:</b> <code>$DEVICE_DEFCONFIG</code>%0A🔧 <b>Toolchain:</b> <code>$KBUILD_COMPILER_STRING</code>"
     
+    # Optimized build flags
+    export LLVM=1
+    export LLVM_IAS=1
+
     log_info "Step 1/4: Configuring defconfig..."
     # Clean output directory config before creating new one
     rm -f "$KERNEL_OUTDIR/.config"
@@ -269,10 +273,6 @@ compile_kernel() {
     install_kernelsu
     
     log_info "Step 3/4: Starting kernel compilation... ($BUILD_OPTIONS)"
-    
-    # Optimized build flags
-    export LLVM=1
-    export LLVM_IAS=1
     
     # Use CCache if enabled
     if [[ "$CCACHE" == "true" ]]; then
