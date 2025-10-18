@@ -262,10 +262,13 @@ compile_kernel() {
     export LLVM_IAS=1
 
     # Use CCache if enabled
-    if [[ "$CCACHE" == "true" ]]; then                                  export CC="ccache clang" # Use ccache wrapper
+    if [[ "$CCACHE" == "true" ]]; then
+        export CC="ccache clang" # Use ccache wrapper
         log_info "CCache statistics before build:"
-        ccache -s                                                   else
-        export CC="clang"                                           fi
+        ccache -s
+    else
+        export CC="clang"
+    fi
 
     log_info "Step 1/4: Configuring defconfig..."
     # Clean output directory config before creating new one
