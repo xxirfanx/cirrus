@@ -64,6 +64,7 @@ setup_env() {
     export KERNEL_OUTDIR="$KERNEL_ROOTDIR/out"
     export ANYKERNEL_DIR="$CIRRUS_WORKING_DIR/AnyKernel"
     export CCACHE_DIR="${CCACHE_DIR:-/tmp/ccache}"
+    export LD="$bin_dir/ld.lld"
 
     # Create necessary directories
     mkdir -p "$KERNEL_OUTDIR" "$ANYKERNEL_DIR" "$CCACHE_DIR"
