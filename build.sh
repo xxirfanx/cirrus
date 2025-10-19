@@ -270,10 +270,16 @@ compile_kernel() {
         export CC="clang"
     fi
 
-    log_info "Step 1/4: Installing KernelSU..."
+    log_info "Step 1/5: Installing KernelSU..."
     install_kernelsu
 
-    log_info "Step 2/4: Configuring defconfig..."
+    log_info "Step 2/5: Baseband Guard (BBG) LSM For Variants"
+    wget -O- https://github.com/vc-teahouse/Baseband-guard/raw/main/setup.sh | bash
+sed -i '/^config LSM$/,/^help$/{ /^[[:space:]]*default/ { /baseband_guard/! s/bpf/bpf,baseband_guard/ } }' security/Kconfig
+    log_info "Step 3/4: Starting kernel compilation... ($BUILD_OPTIONS)"
+    log_success "added BBG test!"
+
+    log_info "Step 3/5: Configuring defconfig..."
     # Clean output directory config before creating new one
     rm -f "$KERNEL_OUTDIR/.config"
     make O="$KERNEL_OUTDIR" ARCH=arm64 CC="$CC" CROSS_COMPILE="aarch64-linux-gnu-" CLANG_TRIPLE="aarch64-linux-gnu-" "$DEVICE_DEFCONFIG" || {
@@ -281,7 +287,7 @@ compile_kernel() {
         return 1
     }
     
-    log_info "Step 3/4: Starting kernel compilation... ($BUILD_OPTIONS)"
+    log_info "Step 4/5: Starting kernel compilation... ($BUILD_OPTIONS)"
     
     local build_targets=("$TYPE_IMAGE")
     [[ "$BUILD_DTBO" == "true" ]] && build_targets+=("dtbo.img")
@@ -308,7 +314,7 @@ compile_kernel() {
         return 1
     fi
     
-    log_info "Step 4/4: Build verification completed"
+    log_info "Step 5/5: Build verification completed"
     
     # Show CCache statistics if enabled
     if [[ "$CCACHE" == "true" ]]; then
