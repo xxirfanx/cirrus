@@ -270,16 +270,16 @@ compile_kernel() {
         export CC="clang"
     fi
 
-    log_info "Step 1/4: Configuring defconfig..."
+    log_info "Step 1/4: Installing KernelSU..."
+    install_kernelsu
+
+    log_info "Step 2/4: Configuring defconfig..."
     # Clean output directory config before creating new one
     rm -f "$KERNEL_OUTDIR/.config"
     make O="$KERNEL_OUTDIR" ARCH=arm64 CC="$CC" CROSS_COMPILE="aarch64-linux-gnu-" CLANG_TRIPLE="aarch64-linux-gnu-" "$DEVICE_DEFCONFIG" || {
         log_error "Defconfig configuration failed"
         return 1
     }
-    
-    log_info "Step 2/4: Installing KernelSU..."
-    install_kernelsu
     
     log_info "Step 3/4: Starting kernel compilation... ($BUILD_OPTIONS)"
     
