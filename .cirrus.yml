@@ -4,7 +4,7 @@ env:
   BUILD_USER: admin
   BUILD_HOST: xposed
   KERNEL_SOURCE: https://github.com/xxirfanx/android_kernel_common_android12-5.10
-  KERNEL_BRANCH: mahiru-5-rose_r1
+  KERNEL_BRANCH: master
   DEVICE_DEFCONFIG: gki_defconfig
   ANYKERNEL: https://github.com/xxirfanx/AnyKernel3
   
