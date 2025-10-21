@@ -3,8 +3,8 @@ env:
   DEVICE_CODENAME: chime
   BUILD_USER: admin
   BUILD_HOST: xposed
-  KERNEL_SOURCE: https://github.com/xxirfanx/android_kernel_common_android12-5.10
-  KERNEL_BRANCH: master
+  KERNEL_SOURCE: https://github.com/ESK-Project/android12-5.10-gki
+  KERNEL_BRANCH: main
   DEVICE_DEFCONFIG: gki_defconfig
   ANYKERNEL: https://github.com/xxirfanx/AnyKernel3
   
