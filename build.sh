@@ -275,7 +275,7 @@ compile_kernel() {
 
     log_info "Step 2/5: Baseband Guard (BBG) LSM For Variants"
     wget -O- https://github.com/vc-teahouse/Baseband-guard/raw/main/setup.sh | bash
-sed -i '/^config LSM$/,/^help$/{ /^[[:space:]]*default/ { /baseband_guard/! s/bpf/bpf,baseband_guard/ } }' security/Kconfig
+    sed -i '/^config LSM$/,/^help$/{ /^[[:space:]]*default/ { /baseband_guard/! s/lockdown/lockdown,baseband_guard/ } }' security/Kconfig
     log_info "Step 3/4: Starting kernel compilation... ($BUILD_OPTIONS)"
     log_success "added BBG test!"
 
