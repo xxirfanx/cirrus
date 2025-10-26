@@ -3,9 +3,9 @@ env:
   DEVICE_CODENAME: chime
   BUILD_USER: admin
   BUILD_HOST: xposed
-  KERNEL_SOURCE: https://github.com/xxirfanx/android_kernel_msm-5.4_nothing_sm7325
-  KERNEL_BRANCH: master
-  DEVICE_DEFCONFIG: np_defconfig
+  KERNEL_SOURCE: https://github.com/kernel-build-from-rainyland/Spacewar_NOS3.0_Kernel
+  KERNEL_BRANCH: sm7325/v/mr
+  DEVICE_DEFCONFIG: spacewar_defconfig
   ANYKERNEL: https://github.com/xxirfanx/AnyKernel3
   
   # Telegram Encrypted Secrets (DO NOT CHANGE unless re-encrypting)
