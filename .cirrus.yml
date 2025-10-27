@@ -3,9 +3,9 @@ env:
   DEVICE_CODENAME: chime
   BUILD_USER: admin
   BUILD_HOST: xposed
-  KERNEL_SOURCE: https://github.com/kernel-build-from-rainyland/Spacewar_NOS3.0_Kernel
-  KERNEL_BRANCH: sm7325/v/mr
-  DEVICE_DEFCONFIG: spacewar_defconfig
+  KERNEL_SOURCE: https://github.com/xxirfanx/android_kernel_common_android12-5.10
+  KERNEL_BRANCH: master
+  DEVICE_DEFCONFIG: gki_defconfig
   ANYKERNEL: https://github.com/xxirfanx/AnyKernel3
   
   # Telegram Encrypted Secrets (DO NOT CHANGE unless re-encrypting)
@@ -13,7 +13,7 @@ env:
   TG_CHAT_ID: ENCRYPTED[!693f768ca576838abbb036f8efd169321f2a7f8c2d10a43ecfd74048c66b538a8eda467cf205630b31e60b7023a224bd!]
 
   # Toolchain Configuration
-  USE_CLANG: "aosp12" # "aosp" or "greenforce" or "aosp12"
+  USE_CLANG: "greenforce" # "aosp" or "greenforce" or "aosp12"
   CLANG_ROOTDIR: /tmp/cirrus-ci-build/clang # Defined here for ccache fingerprint
   AOSP_CLANG_URL: https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/603a89415bbb04dff8bc577b95534479ec13fdc5/clang-r574158.tar.gz
   GREENFORCE_CLANG_URL: https://github.com/greenforce-project/greenforce_clang/releases/download/20251012/gf-clang-22.0.0git-20251012.tar.gz
@@ -53,6 +53,7 @@ task:
       - cat .cirrus.yml
       - echo "$AOSP_CLANG_URL"
       - echo "$GREENFORCE_CLANG_URL"
+      - echo "$AOSP12_CLANG_URL"
 
   update_script:
     - apt-get update
