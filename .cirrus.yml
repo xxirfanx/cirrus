@@ -1,11 +1,11 @@
 env:
   TZ: Asia/Hong_Kong
-  DEVICE_CODENAME: chime
+  DEVICE_CODENAME: a21s
   BUILD_USER: admin
   BUILD_HOST: xposed
-  KERNEL_SOURCE: https://github.com/xxirfanx/android_kernel_common_android12-5.10
+  KERNEL_SOURCE: https://github.com/sqldown/atlas.git
   KERNEL_BRANCH: master
-  DEVICE_DEFCONFIG: gki_defconfig
+  DEVICE_DEFCONFIG: exynos850-a21snsxx_defconfig
   ANYKERNEL: https://github.com/xxirfanx/AnyKernel3
   
   # Telegram Encrypted Secrets (DO NOT CHANGE unless re-encrypting)
@@ -31,7 +31,7 @@ env:
   KPM_VERSION: 0.12.0
 
   # Build optimization
-  BUILD_OPTIONS: "-j16"
+  BUILD_OPTIONS: "-j8"
   CCACHE: true
   CCACHE_DIR: /tmp/ccache
   CCACHE_MAXSIZE: 2G
