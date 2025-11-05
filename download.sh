@@ -78,10 +78,12 @@ case "$USE_CLANG" in
         download_with_retry "$GREENFORCE_CLANG_URL" "$local_archive_name"
         strip_components_count=0 # aosp12 (and most custom toolchains) need stripping
         ;;
+
     "clang21")
-        local_archive_name="clang21-clang.tar"
+        local_archive_name="CLANG21-clang.tar"
         download_with_retry "$CLANG21_CLANG_URL" "$local_archive_name"
-        strip_components_count=0 # aosp12 (and most custom toolchains) need stripping                                                       ;;
+        strip_components_count=0
+        ;;
         
     *)
         handle_error "Invalid USE_CLANG value: '$USE_CLANG'. Must be 'aosp' or 'greenforce'"
