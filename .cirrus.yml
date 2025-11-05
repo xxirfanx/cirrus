@@ -1,9 +1,9 @@
 env:
   TZ: Asia/Hong_Kong
   DEVICE_CODENAME: a21s
-  BUILD_USER: admin
-  BUILD_HOST: xposed
-  KERNEL_SOURCE: https://github.com/sqldown/atlas.git
+  BUILD_USER: xposed
+  BUILD_HOST: arch
+  KERNEL_SOURCE: 
   KERNEL_BRANCH: master
   DEVICE_DEFCONFIG: exynos850-a21snsxx_defconfig
   ANYKERNEL: https://github.com/xxirfanx/AnyKernel3
@@ -18,6 +18,7 @@ env:
   AOSP_CLANG_URL: https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/603a89415bbb04dff8bc577b95534479ec13fdc5/clang-r574158.tar.gz
   GREENFORCE_CLANG_URL: https://github.com/greenforce-project/greenforce_clang/releases/download/20251012/gf-clang-22.0.0git-20251012.tar.gz
   AOSP12_CLANG_URL: https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/42276f8be3ab82a9a71957ca4943872498bdcdee/clang-r416183d.tar.gz
+  CLANG21_CLANG_URL: https://github.com/xxirfanx/Suki_su/releases/download/test/ollvm-21.1.1-linux-amd64_lto+pgo+bolt.tar
 
   # Kernel Build Configuration
   TYPE_IMAGE: Image # Build type kernel Image
@@ -54,6 +55,7 @@ task:
       - echo "$AOSP_CLANG_URL"
       - echo "$GREENFORCE_CLANG_URL"
       - echo "$AOSP12_CLANG_URL"
+      - echo "$CLANG21_CLANG_URL"
 
   update_script:
     - apt-get update
