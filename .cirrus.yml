@@ -3,9 +3,9 @@ env:
   DEVICE_CODENAME: a21s
   BUILD_USER: xposed
   BUILD_HOST: arch
-  KERNEL_SOURCE: 
+  KERNEL_SOURCE: https://github.com/xxirfanx/android_kernel_common_android12-5.10
   KERNEL_BRANCH: master
-  DEVICE_DEFCONFIG: exynos850-a21snsxx_defconfig
+  DEVICE_DEFCONFIG: gki_defconfig
   ANYKERNEL: https://github.com/xxirfanx/AnyKernel3
   
   # Telegram Encrypted Secrets (DO NOT CHANGE unless re-encrypting)
