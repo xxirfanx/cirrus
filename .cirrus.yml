@@ -27,7 +27,7 @@ env:
   # Kernel SU configuration
   KERNELSU: true
   KERNELSU_TYPE: sukisu # Select kernelsu type "rksu" "sukisu" "kernelsunext"
-  KERNELSU_BRANCH: susfs-main
+  KERNELSU_BRANCH: builtin
   KPM_PATCH: true
   KPM_VERSION: 0.12.1
 
